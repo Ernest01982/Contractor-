@@ -55,10 +55,16 @@ export interface Expense {
   image_url?: string;
 }
 
+interface PendingSync {
+  type: 'quote' | 'expense';
+  id: string;
+}
+
 interface AppState {
   quotes: Quote[];
   expenses: Expense[];
   serviceLibrary: ServiceLibraryItem[];
+  pendingSyncs: PendingSync[];
   isOffline: boolean;
   isAuthenticated: boolean;
   bookkeeperToken: string | null;
@@ -82,6 +88,7 @@ export const useStore = create<AppState>()(
       quotes: [],
       expenses: [],
       serviceLibrary: [],
+      pendingSyncs: [],
       isOffline: !navigator.onLine,
       isAuthenticated: false,
       bookkeeperToken: null,
@@ -90,31 +97,33 @@ export const useStore = create<AppState>()(
       addQuote: (quote) => {
         const newQuote = { ...quote, id: quote.id || uuidv4(), date: quote.date || new Date().toISOString() } as Quote;
         set((state) => ({
-          quotes: [newQuote, ...state.quotes]
+          quotes: [newQuote, ...state.quotes],
+          pendingSyncs: [...state.pendingSyncs, { type: 'quote', id: newQuote.id }]
         }));
-        // Sync to Supabase in background
+        
         if (navigator.onLine) {
-          syncQuoteToSupabase(newQuote);
+          get().syncFromSupabase(); // Trigger sync which will process the queue
         }
       },
       updateQuoteStatus: (id, status) => {
         set((state) => ({
-          quotes: state.quotes.map(q => q.id === id ? { ...q, status } : q)
+          quotes: state.quotes.map(q => q.id === id ? { ...q, status } : q),
+          pendingSyncs: [...state.pendingSyncs, { type: 'quote', id }]
         }));
-        // Sync updated quote to Supabase
+        
         if (navigator.onLine) {
-          const updatedQuote = get().quotes.find(q => q.id === id);
-          if (updatedQuote) syncQuoteToSupabase(updatedQuote);
+          get().syncFromSupabase();
         }
       },
       addExpense: (expense) => {
         const newExpense = { ...expense, id: uuidv4() } as Expense;
         set((state) => ({
-          expenses: [newExpense, ...state.expenses]
+          expenses: [newExpense, ...state.expenses],
+          pendingSyncs: [...state.pendingSyncs, { type: 'expense', id: newExpense.id }]
         }));
-        // Sync to Supabase
+        
         if (navigator.onLine) {
-          syncExpenseToSupabase(newExpense);
+          get().syncFromSupabase();
         }
       },
       addServiceToLibrary: (service) => set((state) => ({
@@ -137,29 +146,49 @@ export const useStore = create<AppState>()(
       syncFromSupabase: async () => {
         if (!navigator.onLine) return;
         
+        const state = get();
+        
+        // 1. Process pending syncs first (push local changes to remote)
+        const pending = [...state.pendingSyncs];
+        if (pending.length > 0) {
+          // Deduplicate pending syncs
+          const uniquePending = pending.filter((v, i, a) => a.findIndex(t => (t.id === v.id && t.type === v.type)) === i);
+          
+          for (const item of uniquePending) {
+            if (item.type === 'quote') {
+              const quote = state.quotes.find(q => q.id === item.id);
+              if (quote) await syncQuoteToSupabase(quote);
+            } else if (item.type === 'expense') {
+              const expense = state.expenses.find(e => e.id === item.id);
+              if (expense) await syncExpenseToSupabase(expense);
+            }
+          }
+          
+          // Clear pending syncs after successful push
+          set({ pendingSyncs: [] });
+        }
+        
+        // 2. Fetch latest from remote
         const [remoteQuotes, remoteExpenses] = await Promise.all([
           fetchQuotesFromSupabase(),
           fetchExpensesFromSupabase()
         ]);
 
         if (remoteQuotes.length > 0 || remoteExpenses.length > 0) {
-          set((state) => {
-            // Merge logic: prefer remote if exists, else keep local
+          set((currentState) => {
+            // Merge logic: remote is source of truth, but we just pushed our local changes
+            // so remote should be fully up to date.
             const mergedQuotes = [...remoteQuotes];
-            state.quotes.forEach(localQuote => {
+            currentState.quotes.forEach(localQuote => {
               if (!mergedQuotes.find(q => q.id === localQuote.id)) {
                 mergedQuotes.push(localQuote);
-                // Sync local up to remote
-                syncQuoteToSupabase(localQuote);
               }
             });
 
             const mergedExpenses = [...remoteExpenses];
-            state.expenses.forEach(localExpense => {
+            currentState.expenses.forEach(localExpense => {
               if (!mergedExpenses.find(e => e.id === localExpense.id)) {
                 mergedExpenses.push(localExpense);
-                // Sync local up to remote
-                syncExpenseToSupabase(localExpense);
               }
             });
 
