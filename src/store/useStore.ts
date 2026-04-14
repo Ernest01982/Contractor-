@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { syncQuoteToSupabase, syncExpenseToSupabase, fetchQuotesFromSupabase, fetchExpensesFromSupabase } from '../services/syncService';
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Paid';
 export type JobType = 'Painting' | 'Tiling' | 'Plumbing' | 'Electrical' | 'General';
@@ -72,11 +73,12 @@ interface AppState {
   generateBookkeeperToken: (token: string, expiry: string) => void;
   revokeBookkeeperToken: () => void;
   updateBookkeeperAccess: (date: string) => void;
+  syncFromSupabase: () => Promise<void>;
 }
 
 export const useStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       quotes: [],
       expenses: [],
       serviceLibrary: [],
@@ -85,15 +87,36 @@ export const useStore = create<AppState>()(
       bookkeeperToken: null,
       bookkeeperTokenExpiry: null,
       bookkeeperLastAccessed: null,
-      addQuote: (quote) => set((state) => ({
-        quotes: [{ ...quote, id: quote.id || uuidv4(), date: quote.date || new Date().toISOString() }, ...state.quotes]
-      })),
-      updateQuoteStatus: (id, status) => set((state) => ({
-        quotes: state.quotes.map(q => q.id === id ? { ...q, status } : q)
-      })),
-      addExpense: (expense) => set((state) => ({
-        expenses: [{ ...expense, id: uuidv4() }, ...state.expenses]
-      })),
+      addQuote: (quote) => {
+        const newQuote = { ...quote, id: quote.id || uuidv4(), date: quote.date || new Date().toISOString() } as Quote;
+        set((state) => ({
+          quotes: [newQuote, ...state.quotes]
+        }));
+        // Sync to Supabase in background
+        if (navigator.onLine) {
+          syncQuoteToSupabase(newQuote);
+        }
+      },
+      updateQuoteStatus: (id, status) => {
+        set((state) => ({
+          quotes: state.quotes.map(q => q.id === id ? { ...q, status } : q)
+        }));
+        // Sync updated quote to Supabase
+        if (navigator.onLine) {
+          const updatedQuote = get().quotes.find(q => q.id === id);
+          if (updatedQuote) syncQuoteToSupabase(updatedQuote);
+        }
+      },
+      addExpense: (expense) => {
+        const newExpense = { ...expense, id: uuidv4() } as Expense;
+        set((state) => ({
+          expenses: [newExpense, ...state.expenses]
+        }));
+        // Sync to Supabase
+        if (navigator.onLine) {
+          syncExpenseToSupabase(newExpense);
+        }
+      },
       addServiceToLibrary: (service) => set((state) => ({
         serviceLibrary: [...state.serviceLibrary, { ...service, id: uuidv4() }]
       })),
@@ -110,7 +133,47 @@ export const useStore = create<AppState>()(
       }),
       updateBookkeeperAccess: (date) => set({
         bookkeeperLastAccessed: date
-      })
+      }),
+      syncFromSupabase: async () => {
+        if (!navigator.onLine) return;
+        
+        const [remoteQuotes, remoteExpenses] = await Promise.all([
+          fetchQuotesFromSupabase(),
+          fetchExpensesFromSupabase()
+        ]);
+
+        if (remoteQuotes.length > 0 || remoteExpenses.length > 0) {
+          set((state) => {
+            // Merge logic: prefer remote if exists, else keep local
+            const mergedQuotes = [...remoteQuotes];
+            state.quotes.forEach(localQuote => {
+              if (!mergedQuotes.find(q => q.id === localQuote.id)) {
+                mergedQuotes.push(localQuote);
+                // Sync local up to remote
+                syncQuoteToSupabase(localQuote);
+              }
+            });
+
+            const mergedExpenses = [...remoteExpenses];
+            state.expenses.forEach(localExpense => {
+              if (!mergedExpenses.find(e => e.id === localExpense.id)) {
+                mergedExpenses.push(localExpense);
+                // Sync local up to remote
+                syncExpenseToSupabase(localExpense);
+              }
+            });
+
+            // Sort by date descending
+            mergedQuotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            mergedExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            return {
+              quotes: mergedQuotes,
+              expenses: mergedExpenses
+            };
+          });
+        }
+      }
     }),
     {
       name: 'contractor-storage',

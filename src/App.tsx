@@ -12,7 +12,7 @@ import { LandingPage } from './views/LandingPage';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const { setOfflineStatus, isAuthenticated } = useStore();
+  const { setOfflineStatus, isAuthenticated, syncFromSupabase } = useStore();
 
   // Simple routing based on URL params
   const searchParams = new URLSearchParams(window.location.search);
@@ -21,17 +21,27 @@ export default function App() {
   const bookkeeperToken = searchParams.get('bookkeeper');
 
   useEffect(() => {
-    const handleOnline = () => setOfflineStatus(false);
+    const handleOnline = () => {
+      setOfflineStatus(false);
+      if (isAuthenticated) {
+        syncFromSupabase();
+      }
+    };
     const handleOffline = () => setOfflineStatus(true);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Initial sync if online and authenticated
+    if (navigator.onLine && isAuthenticated) {
+      syncFromSupabase();
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [setOfflineStatus]);
+  }, [setOfflineStatus, isAuthenticated, syncFromSupabase]);
 
   // Render public views if URL params are present
   if (bookkeeperToken) {
