@@ -59,6 +59,7 @@ interface AppState {
   expenses: Expense[];
   serviceLibrary: ServiceLibraryItem[];
   isOffline: boolean;
+  isAuthenticated: boolean;
   bookkeeperToken: string | null;
   bookkeeperTokenExpiry: string | null;
   bookkeeperLastAccessed: string | null;
@@ -67,6 +68,7 @@ interface AppState {
   addExpense: (expense: Omit<Expense, 'id'>) => void;
   addServiceToLibrary: (service: Omit<ServiceLibraryItem, 'id'>) => void;
   setOfflineStatus: (status: boolean) => void;
+  setAuthenticated: (status: boolean) => void;
   generateBookkeeperToken: (token: string, expiry: string) => void;
   revokeBookkeeperToken: () => void;
   updateBookkeeperAccess: (date: string) => void;
@@ -79,6 +81,7 @@ export const useStore = create<AppState>()(
       expenses: [],
       serviceLibrary: [],
       isOffline: !navigator.onLine,
+      isAuthenticated: false,
       bookkeeperToken: null,
       bookkeeperTokenExpiry: null,
       bookkeeperLastAccessed: null,
@@ -95,6 +98,7 @@ export const useStore = create<AppState>()(
         serviceLibrary: [...state.serviceLibrary, { ...service, id: uuidv4() }]
       })),
       setOfflineStatus: (status) => set({ isOffline: status }),
+      setAuthenticated: (status) => set({ isAuthenticated: status }),
       generateBookkeeperToken: (token, expiry) => set({
         bookkeeperToken: token,
         bookkeeperTokenExpiry: expiry

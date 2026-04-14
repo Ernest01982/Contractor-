@@ -1,10 +1,10 @@
-import { User, Bell, Shield, Database, ChevronRight, Link as LinkIcon, Trash2, Copy, Check } from 'lucide-react';
+import { User, Bell, Shield, Database, ChevronRight, Link as LinkIcon, Trash2, Copy, Check, LogOut } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 export function Settings() {
-  const { bookkeeperToken, bookkeeperTokenExpiry, bookkeeperLastAccessed, generateBookkeeperToken, revokeBookkeeperToken } = useStore();
+  const { bookkeeperToken, bookkeeperTokenExpiry, bookkeeperLastAccessed, generateBookkeeperToken, revokeBookkeeperToken, setAuthenticated } = useStore();
   const [copied, setCopied] = useState(false);
 
   const handleGenerateLink = () => {
@@ -21,6 +21,10 @@ export function Settings() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleLogout = () => {
+    setAuthenticated(false);
   };
 
   const isTokenValid = bookkeeperToken && bookkeeperTokenExpiry && new Date(bookkeeperTokenExpiry) > new Date();
@@ -130,6 +134,16 @@ export function Settings() {
             </div>
           </div>
         ))}
+
+        <div className="pt-4">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-medium transition-colors border border-slate-700"
+          >
+            <LogOut size={20} />
+            Log Out
+          </button>
+        </div>
       </div>
     </div>
   );

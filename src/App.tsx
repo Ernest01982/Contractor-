@@ -8,10 +8,11 @@ import { Settings } from './views/Settings';
 import { PublicQuoteView } from './views/PublicQuoteView';
 import { PaymentSuccessView } from './views/PaymentSuccessView';
 import { BookkeeperPortal } from './views/BookkeeperPortal';
+import { LandingPage } from './views/LandingPage';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const setOfflineStatus = useStore(state => state.setOfflineStatus);
+  const { setOfflineStatus, isAuthenticated } = useStore();
 
   // Simple routing based on URL params
   const searchParams = new URLSearchParams(window.location.search);
@@ -43,6 +44,11 @@ export default function App() {
 
   if (quoteId) {
     return <PublicQuoteView quoteId={quoteId} />;
+  }
+
+  // Render Landing Page if not authenticated
+  if (!isAuthenticated) {
+    return <LandingPage />;
   }
 
   const renderTab = () => {
