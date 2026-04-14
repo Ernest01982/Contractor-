@@ -19,7 +19,8 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
         deposit_percentage: quote.deposit_percentage,
         deposit_amount: quote.deposit_amount,
         status: quote.status,
-        date: quote.date
+        date: quote.date,
+        updatedAt: quote.updatedAt
       }, { onConflict: 'id' });
 
     if (quoteError) {
@@ -72,7 +73,8 @@ export const syncExpenseToSupabase = async (expense: Expense) => {
         date: expense.date,
         total_amount: expense.total_amount,
         vat_amount: expense.vat_amount,
-        image_url: expense.image_url
+        image_url: expense.image_url,
+        updatedAt: expense.updatedAt
       }, { onConflict: 'id' });
 
     if (error) {
@@ -108,6 +110,7 @@ export const fetchQuotesFromSupabase = async (): Promise<Quote[]> => {
       deposit_amount: q.deposit_amount,
       status: q.status,
       date: q.date,
+      updatedAt: q.updatedAt || q.date,
       items: q.items || []
     }));
   } catch (error) {
@@ -127,7 +130,10 @@ export const fetchExpensesFromSupabase = async (): Promise<Expense[]> => {
       return [];
     }
 
-    return data || [];
+    return (data || []).map((e: any) => ({
+      ...e,
+      updatedAt: e.updatedAt || e.date
+    }));
   } catch (error) {
     console.error('Failed to fetch expenses:', error);
     return [];
@@ -138,7 +144,7 @@ export const updateQuoteStatusInSupabase = async (id: string, status: string) =>
   try {
     const { error } = await supabase
       .from('quotes')
-      .update({ status })
+      .update({ status, updatedAt: new Date().toISOString() })
       .eq('id', id);
     
     if (error) throw error;
@@ -179,10 +185,60 @@ export const fetchQuoteById = async (id: string): Promise<Quote | null> => {
       deposit_amount: data.deposit_amount,
       status: data.status,
       date: data.date,
+      updatedAt: data.updatedAt || data.date,
       items: data.items || []
     };
   } catch (error) {
     console.error('Unexpected error fetching quote:', error);
     return null;
+  }
+};
+
+export const fetchProfileFromSupabase = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching profile:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch profile:', error);
+    return null;
+  }
+};
+
+export const syncProfileToSupabase = async (profile: any) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Remove client-side only fields if any, and ensure user_id is set
+    const { user_id, ...profileData } = profile;
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        ...profileData,
+        user_id: user.id,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+    if (error) {
+      console.error('Error syncing profile:', error.message);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to sync profile:', error);
+    throw error;
   }
 };

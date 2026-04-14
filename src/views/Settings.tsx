@@ -160,27 +160,7 @@ export function Settings() {
             
             {activeModal === 'profile' ? (
               <div className="space-y-4 py-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Company Name</label>
-                  <input type="text" defaultValue="Contractor Pro" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" defaultValue="contact@contractorpro.co.za" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
-                  <input type="tel" defaultValue="+27 82 123 4567" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500" />
-                </div>
-                <button 
-                  onClick={() => {
-                    alert('Profile updated successfully!');
-                    setActiveModal(null);
-                  }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-colors mt-4"
-                >
-                  Save Changes
-                </button>
+                <ProfileForm />
               </div>
             ) : (
               <div className="py-8 text-center">
@@ -206,12 +186,127 @@ export function Settings() {
                 onClick={() => setActiveModal(null)}
                 className="w-full text-slate-500 py-2 text-sm font-medium mt-2"
               >
-                Cancel
+                Close
               </button>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ProfileForm() {
+  const { profile, updateProfile } = useStore();
+  const [formData, setFormData] = useState({
+    company_name: profile?.company_name || '',
+    email: profile?.email || '',
+    phone: profile?.phone || '',
+    vat_number: profile?.vat_number || '',
+    is_vat_registered: profile?.is_vat_registered || false,
+    default_deposit_pct: profile?.default_deposit_pct || 50
+  });
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    updateProfile(formData);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Company Name</label>
+        <input 
+          type="text" 
+          value={formData.company_name}
+          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500" 
+          placeholder="e.g. Acme Construction"
+        />
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+          <input 
+            type="email" 
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500 text-sm" 
+            placeholder="contact@company.com"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Phone</label>
+          <input 
+            type="tel" 
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500 text-sm" 
+            placeholder="+27..."
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
+        <div className="space-y-0.5">
+          <span className="text-sm font-medium text-slate-200">VAT Registered</span>
+          <p className="text-[10px] text-slate-500 uppercase tracking-tight">Enable VAT calculations</p>
+        </div>
+        <button 
+          onClick={() => setFormData({ ...formData, is_vat_registered: !formData.is_vat_registered })}
+          className={`w-12 h-6 rounded-full transition-colors relative ${formData.is_vat_registered ? 'bg-emerald-600' : 'bg-slate-800'}`}
+        >
+          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.is_vat_registered ? 'left-7' : 'left-1'}`} />
+        </button>
+      </div>
+
+      {formData.is_vat_registered && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">VAT Number</label>
+          <input 
+            type="text" 
+            value={formData.vat_number}
+            onChange={(e) => setFormData({ ...formData, vat_number: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500" 
+            placeholder="Enter VAT ID"
+          />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">Default Deposit</label>
+          <span className="text-emerald-400 font-bold">{formData.default_deposit_pct}%</span>
+        </div>
+        <input 
+          type="range" 
+          min="0" 
+          max="100" 
+          step="5"
+          value={formData.default_deposit_pct}
+          onChange={(e) => setFormData({ ...formData, default_deposit_pct: parseInt(e.target.value) })}
+          className="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-emerald-600 border border-slate-800"
+        />
+      </div>
+
+      <button 
+        onClick={handleSave}
+        className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+          saved ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20'
+        }`}
+      >
+        {saved ? (
+          <>
+            <Check size={20} />
+            Saved!
+          </>
+        ) : (
+          'Save Changes'
+        )}
+      </button>
     </div>
   );
 }
