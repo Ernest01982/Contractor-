@@ -1,0 +1,6 @@
+{
+  "name": "Contractor Pro",
+  "description": "Offline-first mobile PWA for contractors to manage quotes and expenses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
