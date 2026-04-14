@@ -1,24 +1,69 @@
-import { useEffect, useRef } from 'react';
-import { useStore } from '../store/useStore';
-import { Download, CheckCircle, XCircle, Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useStore, Quote } from '../store/useStore';
+import { Download, CheckCircle, XCircle, Check, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { fetchQuoteById, updateQuoteStatusInSupabase } from '../services/syncService';
 
 export function PublicQuoteView({ quoteId }: { quoteId: string }) {
   const { quotes, updateQuoteStatus } = useStore();
-  const quote = quotes.find(q => q.id === quoteId);
+  const [quote, setQuote] = useState<Quote | null>(quotes.find(q => q.id === quoteId) || null);
+  const [loading, setLoading] = useState(!quote);
+  const [updating, setUpdating] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!quote) {
+      const loadQuote = async () => {
+        try {
+          console.log('Fetching quote:', quoteId);
+          const data = await fetchQuoteById(quoteId);
+          if (data) {
+            console.log('Quote found:', data);
+            setQuote(data);
+          } else {
+            console.error('Quote not found in Supabase');
+          }
+        } catch (err) {
+          console.error('Error loading quote:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadQuote();
+    }
+  }, [quoteId, quote]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin mb-4" />
+        <p className="text-slate-600 font-medium">Loading your quote...</p>
+      </div>
+    );
+  }
 
   if (!quote) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md w-full">
+        <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md w-full border border-slate-200">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircle size={32} />
+          </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">Quote Not Found</h2>
-          <p className="text-slate-500">This quote may have been deleted or the link is invalid.</p>
+          <p className="text-slate-500 mb-6">This quote may have been deleted or the link is invalid. Please contact your contractor.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
+
+  const items = quote.items || [];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
@@ -43,12 +88,30 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
     }
   };
 
-  const handleAccept = () => {
-    updateQuoteStatus(quote.id, 'Accepted');
+  const handleAccept = async () => {
+    setUpdating(true);
+    try {
+      await updateQuoteStatusInSupabase(quote.id, 'Accepted');
+      setQuote({ ...quote, status: 'Accepted' });
+      updateQuoteStatus(quote.id, 'Accepted');
+    } catch (error) {
+      alert('Failed to accept quote. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const handleDecline = () => {
-    updateQuoteStatus(quote.id, 'Declined');
+  const handleDecline = async () => {
+    setUpdating(true);
+    try {
+      await updateQuoteStatusInSupabase(quote.id, 'Declined');
+      setQuote({ ...quote, status: 'Declined' });
+      updateQuoteStatus(quote.id, 'Declined');
+    } catch (error) {
+      alert('Failed to decline quote. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -69,16 +132,18 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
             <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={handleDecline}
-                className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                disabled={updating}
+                className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
-                <XCircle size={20} />
+                {updating ? <Loader2 size={20} className="animate-spin" /> : <XCircle size={20} />}
                 Decline Quote
               </button>
               <button 
                 onClick={handleAccept}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-600/20"
+                disabled={updating}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-600/20 disabled:opacity-50"
               >
-                <Check size={20} />
+                {updating ? <Loader2 size={20} className="animate-spin" /> : <Check size={20} />}
                 Accept Quote
               </button>
             </div>
@@ -154,7 +219,7 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
               <div className="col-span-4 text-right">Amount</div>
             </div>
             
-            {quote.items.map(item => (
+            {items.map(item => (
               <div key={item.id} className="grid grid-cols-12 items-start py-2 border-b border-slate-100 last:border-0">
                 <div className="col-span-8">
                   <p className="font-semibold text-slate-800">{item.description}</p>

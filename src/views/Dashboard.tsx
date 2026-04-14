@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { QuoteBuilder } from '../components/QuoteBuilder';
 
 export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
-  const { quotes, expenses } = useStore();
+  const { quotes, expenses, pendingSyncs, isOffline } = useStore();
   const [showBuilder, setShowBuilder] = useState(false);
 
   const pendingDeposits = quotes
@@ -19,6 +19,26 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
 
   return (
     <div className="p-4 space-y-6 pb-24">
+      {/* Sync Status */}
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-xl font-bold text-slate-50">Dashboard</h2>
+        <div className="flex items-center gap-2">
+          {isOffline ? (
+            <div className="flex items-center gap-1.5 text-orange-400 bg-orange-400/10 px-2 py-1 rounded-full text-xs font-medium">
+              <CloudOff size={14} /> Offline
+            </div>
+          ) : pendingSyncs.length > 0 ? (
+            <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full text-xs font-medium">
+              <Loader2 size={14} className="animate-spin" /> Syncing...
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-slate-500 bg-slate-800 px-2 py-1 rounded-full text-xs font-medium">
+              <Cloud size={14} /> Cloud Synced
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-sm">

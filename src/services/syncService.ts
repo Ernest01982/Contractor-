@@ -3,6 +3,8 @@ import { Quote, Expense } from '../store/useStore';
 
 export const syncQuoteToSupabase = async (quote: Quote) => {
   try {
+    console.log('Syncing quote to Supabase:', quote.id);
+    
     // 1. Upsert the quote
     const { error: quoteError } = await supabase
       .from('quotes')
@@ -18,11 +20,11 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
         deposit_amount: quote.deposit_amount,
         status: quote.status,
         date: quote.date
-      });
+      }, { onConflict: 'id' });
 
     if (quoteError) {
-      console.error('Error syncing quote:', quoteError);
-      return;
+      console.error('Error syncing quote:', quoteError.message, quoteError.details);
+      throw quoteError;
     }
 
     // 2. Upsert the items
@@ -45,14 +47,17 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
 
       const { error: itemsError } = await supabase
         .from('quote_items')
-        .upsert(itemsToInsert);
+        .upsert(itemsToInsert, { onConflict: 'id' });
 
       if (itemsError) {
-        console.error('Error syncing quote items:', itemsError);
+        console.error('Error syncing quote items:', itemsError.message, itemsError.details);
+        throw itemsError;
       }
     }
+    console.log('Quote synced successfully');
   } catch (error) {
     console.error('Failed to sync quote to Supabase:', error);
+    throw error;
   }
 };
 
@@ -68,13 +73,15 @@ export const syncExpenseToSupabase = async (expense: Expense) => {
         total_amount: expense.total_amount,
         vat_amount: expense.vat_amount,
         image_url: expense.image_url
-      });
+      }, { onConflict: 'id' });
 
     if (error) {
-      console.error('Error syncing expense:', error);
+      console.error('Error syncing expense:', error.message);
+      throw error;
     }
   } catch (error) {
     console.error('Failed to sync expense to Supabase:', error);
+    throw error;
   }
 };
 
@@ -85,7 +92,7 @@ export const fetchQuotesFromSupabase = async (): Promise<Quote[]> => {
       .select('*, items:quote_items(*)');
 
     if (quotesError) {
-      console.error('Error fetching quotes:', quotesError);
+      console.error('Error fetching quotes:', quotesError.message);
       return [];
     }
 
@@ -116,7 +123,7 @@ export const fetchExpensesFromSupabase = async (): Promise<Expense[]> => {
       .select('*');
 
     if (error) {
-      console.error('Error fetching expenses:', error);
+      console.error('Error fetching expenses:', error.message);
       return [];
     }
 
@@ -124,5 +131,58 @@ export const fetchExpensesFromSupabase = async (): Promise<Expense[]> => {
   } catch (error) {
     console.error('Failed to fetch expenses:', error);
     return [];
+  }
+};
+
+export const updateQuoteStatusInSupabase = async (id: string, status: string) => {
+  try {
+    const { error } = await supabase
+      .from('quotes')
+      .update({ status })
+      .eq('id', id);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('Failed to update quote status in Supabase:', error);
+    throw error;
+  }
+};
+
+export const fetchQuoteById = async (id: string): Promise<Quote | null> => {
+  try {
+    console.log('Fetching quote from Supabase:', id);
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('*, items:quote_items(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase error fetching quote:', error.message, error.details, error.hint);
+      return null;
+    }
+
+    if (!data) {
+      console.warn('No quote found with ID:', id);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      client_name: data.client_name,
+      client_phone: data.client_phone,
+      subtotal: data.subtotal,
+      has_vat: data.has_vat,
+      vat_amount: data.vat_amount,
+      total_amount: data.total_amount,
+      deposit_percentage: data.deposit_percentage,
+      deposit_amount: data.deposit_amount,
+      status: data.status,
+      date: data.date,
+      items: data.items || []
+    };
+  } catch (error) {
+    console.error('Unexpected error fetching quote:', error);
+    return null;
   }
 };
