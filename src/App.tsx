@@ -9,10 +9,13 @@ import { PublicQuoteView } from './views/PublicQuoteView';
 import { PaymentSuccessView } from './views/PaymentSuccessView';
 import { BookkeeperPortal } from './views/BookkeeperPortal';
 import { LandingPage } from './views/LandingPage';
+import { AuthView } from './views/AuthView';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const { setOfflineStatus, isAuthenticated, syncFromSupabase } = useStore();
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
+  const { setOfflineStatus, isAuthenticated, setAuthenticated, syncFromSupabase } = useStore();
 
   // Simple routing based on URL params
   const searchParams = new URLSearchParams(window.location.search);
@@ -21,6 +24,20 @@ export default function App() {
   const bookkeeperToken = searchParams.get('bookkeeper');
 
   useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthenticated(!!session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthenticated(!!session);
+      if (session) {
+        setAuthMode(null); // close auth view on success
+        if (navigator.onLine) syncFromSupabase();
+      }
+    });
+
     const handleOnline = () => {
       setOfflineStatus(false);
       if (isAuthenticated) {
@@ -38,10 +55,11 @@ export default function App() {
     }
 
     return () => {
+      subscription.unsubscribe();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [setOfflineStatus, isAuthenticated, syncFromSupabase]);
+  }, [setOfflineStatus, isAuthenticated, syncFromSupabase, setAuthenticated]);
 
   // Render public views if URL params are present
   if (bookkeeperToken) {
@@ -56,9 +74,12 @@ export default function App() {
     return <PublicQuoteView quoteId={quoteId} />;
   }
 
-  // Render Landing Page if not authenticated
+  // Render Landing Page or Auth if not authenticated
   if (!isAuthenticated) {
-    return <LandingPage />;
+    if (authMode) {
+      return <AuthView mode={authMode} onBack={() => setAuthMode(null)} />;
+    }
+    return <LandingPage onLogin={() => setAuthMode('login')} onSignUp={() => setAuthMode('signup')} />;
   }
 
   const renderTab = () => {

@@ -76,7 +76,7 @@ export function BookkeeperPortal({ token }: { token: string }) {
 
       // 6. Download
       const month = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-      XLSX.writeFile(wb, `ContractorFlow_Report_${month.replace(' ', '_')}.xlsx`);
+      XLSX.writeFile(wb, `Contractor_Pro_Report_${month.replace(' ', '_')}.xlsx`);
       
     } catch (error) {
       console.error("Failed to generate Excel", error);

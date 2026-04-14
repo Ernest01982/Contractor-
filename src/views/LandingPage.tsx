@@ -1,13 +1,15 @@
 import React from 'react';
 import { CheckCircle2, Hammer, Smartphone, Zap, FileSpreadsheet, ArrowRight } from 'lucide-react';
-import { useStore } from '../store/useStore';
 
-export function LandingPage() {
-  const setAuthenticated = useStore(state => state.setAuthenticated);
+interface LandingPageProps {
+  onLogin: () => void;
+  onSignUp: () => void;
+}
 
+export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
   const handleLogin = (e: React.MouseEvent) => {
     e.preventDefault();
-    setAuthenticated(true);
+    onLogin();
   };
 
   return (
@@ -17,11 +19,11 @@ export function LandingPage() {
       <nav className="flex items-center justify-between p-6 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
           <Hammer className="text-emerald-600 h-8 w-8" />
-          <span className="text-2xl font-bold tracking-tight text-slate-900">ContractorFlow</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900">Contractor Pro</span>
         </div>
         <div className="flex gap-4 items-center">
           <a href="#" onClick={handleLogin} className="text-slate-600 font-medium hover:text-slate-900 transition">Log in</a>
-          <button onClick={handleLogin} className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-emerald-700 transition shadow-sm">
+          <button onClick={onSignUp} className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-emerald-700 transition shadow-sm">
             Start Free
           </button>
         </div>
@@ -40,7 +42,7 @@ export function LandingPage() {
           Stop writing quotes at 9 PM. Generate professional, trade-specific quotes on-site, send them via WhatsApp, and collect Payfast deposits instantly—even during loadshedding.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button onClick={handleLogin} className="w-full sm:w-auto bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition shadow-lg flex items-center justify-center gap-2">
+          <button onClick={onSignUp} className="w-full sm:w-auto bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition shadow-lg flex items-center justify-center gap-2">
             Create Your Workspace <ArrowRight className="h-5 w-5" />
           </button>
           <p className="text-sm text-slate-500 sm:hidden">No credit card required. 14-day free trial.</p>
@@ -52,7 +54,7 @@ export function LandingPage() {
       <section className="bg-slate-900 py-24 px-6 text-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How ContractorFlow Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How Contractor Pro Works</h2>
             <p className="text-slate-400 text-lg">From handshake to deposit in under 3 minutes.</p>
           </div>
 
@@ -109,7 +111,7 @@ export function LandingPage() {
         <button onClick={handleLogin} className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition shadow-lg">
           Start Your 14-Day Free Trial
         </button>
-        <p className="mt-8 text-slate-500">© {new Date().getFullYear()} ContractorFlow. Proudly built in South Africa.</p>
+        <p className="mt-8 text-slate-500">© {new Date().getFullYear()} Contractor Pro. Proudly built in South Africa.</p>
       </footer>
     </div>
   );

@@ -2,6 +2,7 @@ import { User, Bell, Shield, Database, ChevronRight, Link as LinkIcon, Trash2, C
 import { useStore } from '../store/useStore';
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../lib/supabase';
 
 export function Settings() {
   const { bookkeeperToken, bookkeeperTokenExpiry, bookkeeperLastAccessed, generateBookkeeperToken, revokeBookkeeperToken, setAuthenticated } = useStore();
@@ -23,7 +24,8 @@ export function Settings() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setAuthenticated(false);
   };
 
@@ -138,7 +140,7 @@ export function Settings() {
         <div className="pt-4">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-medium transition-colors border border-slate-700"
+            className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-4 rounded-2xl font-bold transition-colors border border-red-500/20"
           >
             <LogOut size={20} />
             Log Out
