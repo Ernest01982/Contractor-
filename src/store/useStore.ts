@@ -339,6 +339,14 @@ export const useStore = create<AppState>()(
               isSyncing: false
             };
           });
+
+          // If more sync tasks were queued while we were processing, trigger another sync
+          if (get().pendingSyncs.length > 0) {
+            setTimeout(() => {
+              get().syncFromSupabase();
+            }, 500);
+          }
+
         } catch (error: any) {
           const msg = error.message || String(error);
           console.error('Global sync error:', msg);
