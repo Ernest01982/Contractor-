@@ -240,6 +240,18 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
   };
 
   const handleFinalize = async () => {
+    if (!clientName.trim() || !clientPhone.trim()) {
+      alert("Please provide a client name and phone number.");
+      setStep(1);
+      return;
+    }
+
+    if (items.length === 0) {
+      alert("Please add at least one item to the quote.");
+      setStep(2);
+      return;
+    }
+
     setIsGeneratingPDF(true);
     const quoteId = uuidv4();
     
@@ -308,14 +320,12 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
             vat_number: clientVat
           });
         } else {
-          const newClientId = uuidv4();
-          addClient({
+          activeClientId = addClient({
             name: clientName,
             phone: clientPhone,
             email: clientEmail,
             vat_number: clientVat
           });
-          activeClientId = newClientId;
         }
       }
 

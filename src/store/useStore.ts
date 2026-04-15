@@ -105,7 +105,7 @@ interface AppState {
   deleteQuote: (id: string) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   addExpense: (expense: Omit<Expense, 'id' | 'updated_at'>) => void;
-  addClient: (client: Omit<Client, 'id' | 'updated_at'>) => void;
+  addClient: (client: Omit<Client, 'id' | 'updated_at'>) => string;
   updateClient: (id: string, updates: Partial<Client>) => void;
   addServiceToLibrary: (service: Omit<ServiceLibraryItem, 'id'>) => void;
   setOfflineStatus: (status: boolean) => void;
@@ -210,6 +210,7 @@ export const useStore = create<AppState>()(
           pendingSyncs: [...state.pendingSyncs, { type: 'client', id: newClient.id }]
         }));
         if (navigator.onLine) get().syncFromSupabase();
+        return newClient.id;
       },
       updateClient: (id, updates) => {
         const now = new Date().toISOString();
@@ -260,11 +261,19 @@ export const useStore = create<AppState>()(
             const typePriority = { 'client': 0, 'quote': 1, 'expense': 2, 'delete-quote': 3 };
             uniquePending.sort((a, b) => (typePriority[a.type as keyof typeof typePriority] ?? 5) - (typePriority[b.type as keyof typeof typePriority] ?? 5));
             
+            const failedIds = new Set<string>();
+            const errors: string[] = [];
+
             for (const item of uniquePending) {
               try {
                 if (item.type === 'quote') {
                   const quote = state.quotes.find(q => q.id === item.id);
                   if (quote) {
+                    // Check if this quote's client failed to sync in this batch
+                    if (quote.client_id && failedIds.has(quote.client_id)) {
+                      console.warn(`Skipping quote ${quote.id} because its client ${quote.client_id} failed to sync.`);
+                      continue; // Keep in pendingSyncs for next try
+                    }
                     await syncQuoteToSupabase(quote);
                   }
                   successfulSyncs.push(item);
@@ -287,10 +296,15 @@ export const useStore = create<AppState>()(
               } catch (err: any) {
                 const msg = err.message || String(err);
                 console.error(`Failed to sync ${item.type} ${item.id}:`, msg);
-                set({ lastSyncError: `Sync failed: ${msg}` });
+                failedIds.add(item.id);
+                errors.push(`${item.type} sync failed: ${msg}`);
               }
             }
             
+            if (errors.length > 0) {
+              set({ lastSyncError: errors.length === 1 ? errors[0] : `${errors.length} sync tasks failed. Check console for details.` });
+            }
+
             // Remove only successful syncs from the queue
             set((currentState) => ({
               pendingSyncs: currentState.pendingSyncs.filter(p => 
