@@ -35,7 +35,7 @@ export interface Quote {
   deposit_amount: number;
   status: QuoteStatus;
   date: string;
-  updatedAt: string;
+  updated_at: string;
 }
 
 export interface ServiceLibraryItem {
@@ -54,7 +54,7 @@ export interface Expense {
   total_amount: number;
   vat_amount: number;
   image_url?: string;
-  updatedAt: string;
+  updated_at: string;
 }
 
 export interface UserProfile {
@@ -82,13 +82,14 @@ interface AppState {
   isOffline: boolean;
   isAuthenticated: boolean;
   isSyncing: boolean;
+  lastSyncError: string | null;
   bookkeeperToken: string | null;
   bookkeeperTokenExpiry: string | null;
   bookkeeperLastAccessed: string | null;
-  addQuote: (quote: Partial<Quote> & Omit<Quote, 'id' | 'date' | 'updatedAt'>) => void;
+  addQuote: (quote: Partial<Quote> & Omit<Quote, 'id' | 'date' | 'updated_at'>) => void;
   updateQuoteStatus: (id: string, status: QuoteStatus) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
-  addExpense: (expense: Omit<Expense, 'id' | 'updatedAt'>) => void;
+  addExpense: (expense: Omit<Expense, 'id' | 'updated_at'>) => void;
   addServiceToLibrary: (service: Omit<ServiceLibraryItem, 'id'>) => void;
   setOfflineStatus: (status: boolean) => void;
   setAuthenticated: (status: boolean) => void;
@@ -109,6 +110,7 @@ export const useStore = create<AppState>()(
       isOffline: !navigator.onLine,
       isAuthenticated: false,
       isSyncing: false,
+      lastSyncError: null,
       bookkeeperToken: null,
       bookkeeperTokenExpiry: null,
       bookkeeperLastAccessed: null,
@@ -118,7 +120,7 @@ export const useStore = create<AppState>()(
           ...quote, 
           id: quote.id || uuidv4(), 
           date: quote.date || now,
-          updatedAt: now
+          updated_at: now
         } as Quote;
         
         set((state) => ({
@@ -133,7 +135,7 @@ export const useStore = create<AppState>()(
       updateQuoteStatus: (id, status) => {
         const now = new Date().toISOString();
         set((state) => ({
-          quotes: state.quotes.map(q => q.id === id ? { ...q, status, updatedAt: now } : q),
+          quotes: state.quotes.map(q => q.id === id ? { ...q, status, updated_at: now } : q),
           pendingSyncs: [...state.pendingSyncs, { type: 'quote', id }]
         }));
         
@@ -152,7 +154,7 @@ export const useStore = create<AppState>()(
       },
       addExpense: (expense) => {
         const now = new Date().toISOString();
-        const newExpense = { ...expense, id: uuidv4(), updatedAt: now } as Expense;
+        const newExpense = { ...expense, id: uuidv4(), updated_at: now } as Expense;
         set((state) => ({
           expenses: [newExpense, ...state.expenses],
           pendingSyncs: [...state.pendingSyncs, { type: 'expense', id: newExpense.id }]
@@ -186,6 +188,7 @@ export const useStore = create<AppState>()(
         
         try {
           const state = get();
+          set({ lastSyncError: null });
           
           // 1. Process pending syncs with individual error handling
           const pending = [...state.pendingSyncs];
@@ -213,9 +216,10 @@ export const useStore = create<AppState>()(
                     successfulSyncs.push(item);
                   }
                 }
-              } catch (err) {
-                console.error(`Failed to sync ${item.type} ${item.id}:`, err);
-                // We don't add to successfulSyncs, so it stays in the queue for next retry
+              } catch (err: any) {
+                const msg = err.message || String(err);
+                console.error(`Failed to sync ${item.type} ${item.id}:`, msg);
+                set({ lastSyncError: `Sync failed: ${msg}` });
               }
             }
             
@@ -235,7 +239,7 @@ export const useStore = create<AppState>()(
           ]);
 
           set((currentState) => {
-            // Merge logic: Use updatedAt for conflict resolution
+            // Merge logic: Use updated_at for conflict resolution
             const quoteMap = new Map<string, Quote>();
             
             // Add local quotes first
@@ -244,7 +248,7 @@ export const useStore = create<AppState>()(
             // Merge remote quotes
             remoteQuotes.forEach(remoteQ => {
               const localQ = quoteMap.get(remoteQ.id);
-              if (!localQ || new Date(remoteQ.updatedAt || remoteQ.date) > new Date(localQ.updatedAt || localQ.date)) {
+              if (!localQ || new Date(remoteQ.updated_at || remoteQ.date) > new Date(localQ.updated_at || localQ.date)) {
                 quoteMap.set(remoteQ.id, remoteQ);
               }
             });
@@ -253,7 +257,7 @@ export const useStore = create<AppState>()(
             currentState.expenses.forEach(e => expenseMap.set(e.id, e));
             remoteExpenses.forEach(remoteE => {
               const localE = expenseMap.get(remoteE.id);
-              if (!localE || new Date(remoteE.updatedAt || remoteE.date) > new Date(localE.updatedAt || localE.date)) {
+              if (!localE || new Date(remoteE.updated_at || remoteE.date) > new Date(localE.updated_at || localE.date)) {
                 expenseMap.set(remoteE.id, remoteE);
               }
             });
@@ -271,9 +275,10 @@ export const useStore = create<AppState>()(
               isSyncing: false
             };
           });
-        } catch (error) {
-          console.error('Global sync error:', error);
-          set({ isSyncing: false });
+        } catch (error: any) {
+          const msg = error.message || String(error);
+          console.error('Global sync error:', msg);
+          set({ isSyncing: false, lastSyncError: `Global sync error: ${msg}` });
         }
       }
     }),

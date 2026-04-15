@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2 } from 'lucide-react';
+import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2, Shield } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { QuoteBuilder } from '../components/QuoteBuilder';
 
 export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
-  const { quotes, expenses, pendingSyncs, isOffline } = useStore();
+  const { quotes, expenses, pendingSyncs, isOffline, lastSyncError } = useStore();
   const [showBuilder, setShowBuilder] = useState(false);
 
   const pendingDeposits = quotes
@@ -26,6 +26,10 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
           {isOffline ? (
             <div className="flex items-center gap-1.5 text-orange-400 bg-orange-400/10 px-2 py-1 rounded-full text-xs font-medium">
               <CloudOff size={14} /> Offline
+            </div>
+          ) : lastSyncError ? (
+            <div className="flex items-center gap-1.5 text-red-400 bg-red-400/10 px-2 py-1 rounded-full text-xs font-medium animate-pulse">
+              <Shield size={14} /> Sync Error
             </div>
           ) : pendingSyncs.length > 0 ? (
             <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full text-xs font-medium">

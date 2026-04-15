@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 
 export function Settings() {
-  const { bookkeeperToken, bookkeeperTokenExpiry, bookkeeperLastAccessed, generateBookkeeperToken, revokeBookkeeperToken, setAuthenticated } = useStore();
+  const { bookkeeperToken, bookkeeperTokenExpiry, bookkeeperLastAccessed, generateBookkeeperToken, revokeBookkeeperToken, setAuthenticated, lastSyncError, syncFromSupabase } = useStore();
   const [copied, setCopied] = useState(false);
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
@@ -53,6 +53,25 @@ export function Settings() {
   return (
     <div className="p-4 space-y-6 pb-24">
       <h2 className="text-xl font-bold text-slate-50">Settings</h2>
+
+      {/* Sync Error Log */}
+      {lastSyncError && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 space-y-2">
+          <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
+            <Shield size={16} />
+            Sync Error Detected
+          </div>
+          <p className="text-xs text-red-400/80 leading-relaxed">
+            {lastSyncError}
+          </p>
+          <button 
+            onClick={() => syncFromSupabase()}
+            className="text-xs font-bold text-red-500 hover:text-red-400 underline underline-offset-2"
+          >
+            Retry Sync
+          </button>
+        </div>
+      )}
       
       {/* Bookkeeper Hub */}
       <div className="space-y-2">

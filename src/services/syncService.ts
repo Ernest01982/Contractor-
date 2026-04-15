@@ -20,7 +20,7 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
         deposit_amount: quote.deposit_amount,
         status: quote.status,
         date: quote.date,
-        updatedAt: quote.updatedAt
+        updated_at: quote.updated_at
       }, { onConflict: 'id' });
 
     if (quoteError) {
@@ -74,7 +74,7 @@ export const syncExpenseToSupabase = async (expense: Expense) => {
         total_amount: expense.total_amount,
         vat_amount: expense.vat_amount,
         image_url: expense.image_url,
-        updatedAt: expense.updatedAt
+        updated_at: expense.updated_at
       }, { onConflict: 'id' });
 
     if (error) {
@@ -110,7 +110,7 @@ export const fetchQuotesFromSupabase = async (): Promise<Quote[]> => {
       deposit_amount: q.deposit_amount,
       status: q.status,
       date: q.date,
-      updatedAt: q.updatedAt || q.date,
+      updated_at: q.updated_at || q.date,
       items: q.items || []
     }));
   } catch (error) {
@@ -132,7 +132,7 @@ export const fetchExpensesFromSupabase = async (): Promise<Expense[]> => {
 
     return (data || []).map((e: any) => ({
       ...e,
-      updatedAt: e.updatedAt || e.date
+      updated_at: e.updated_at || e.date
     }));
   } catch (error) {
     console.error('Failed to fetch expenses:', error);
@@ -144,7 +144,7 @@ export const updateQuoteStatusInSupabase = async (id: string, status: string) =>
   try {
     const { error } = await supabase
       .from('quotes')
-      .update({ status, updatedAt: new Date().toISOString() })
+      .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id);
     
     if (error) throw error;
@@ -185,7 +185,7 @@ export const fetchQuoteById = async (id: string): Promise<Quote | null> => {
       deposit_amount: data.deposit_amount,
       status: data.status,
       date: data.date,
-      updatedAt: data.updatedAt || data.date,
+      updated_at: data.updated_at || data.date,
       items: data.items || []
     };
   } catch (error) {
