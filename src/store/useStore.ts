@@ -262,20 +262,20 @@ export const useStore = create<AppState>()(
                   const quote = state.quotes.find(q => q.id === item.id);
                   if (quote) {
                     await syncQuoteToSupabase(quote);
-                    successfulSyncs.push(item);
                   }
+                  successfulSyncs.push(item);
                 } else if (item.type === 'expense') {
                   const expense = state.expenses.find(e => e.id === item.id);
                   if (expense) {
                     await syncExpenseToSupabase(expense);
-                    successfulSyncs.push(item);
                   }
+                  successfulSyncs.push(item);
                 } else if (item.type === 'client') {
                   const client = state.clients.find(c => c.id === item.id);
                   if (client) {
                     await syncClientToSupabase(client);
-                    successfulSyncs.push(item);
                   }
+                  successfulSyncs.push(item);
                 } else if (item.type === 'delete-quote') {
                   await deleteQuoteFromSupabase(item.id);
                   successfulSyncs.push(item);
