@@ -65,6 +65,19 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
   }
 };
 
+export const deleteQuoteFromSupabase = async (id: string) => {
+  try {
+    const { error } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  } catch (error) {
+    console.error('Failed to delete quote from Supabase:', error);
+    throw error;
+  }
+};
+
 export const syncExpenseToSupabase = async (expense: Expense) => {
   try {
     const { error } = await supabase

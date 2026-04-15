@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useStore, QuoteStatus } from '../store/useStore';
-import { Plus, Search, FileText, Edit2, MessageCircle, Mail } from 'lucide-react';
+import { Plus, Search, FileText, Edit2, MessageCircle, Mail, Trash2 } from 'lucide-react';
 import { QuoteBuilder } from '../components/QuoteBuilder';
 
 export function Quotes() {
-  const { quotes, updateQuoteStatus } = useStore();
+  const { quotes, updateQuoteStatus, deleteQuote } = useStore();
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | undefined>();
   const [filter, setFilter] = useState<'All' | 'Pending' | 'Active' | 'Past'>('All');
@@ -143,6 +143,17 @@ export function Quotes() {
                 </button>
                 <button onClick={() => handleWhatsApp(quote)} className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 rounded-lg text-emerald-400 transition-colors" title="Send via WhatsApp">
                   <MessageCircle size={16} />
+                </button>
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to permanently delete this quote?")) {
+                      deleteQuote(quote.id);
+                    }
+                  }} 
+                  className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 transition-colors" 
+                  title="Delete Quote"
+                >
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>

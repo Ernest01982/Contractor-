@@ -15,5 +15,9 @@ ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_email TEXT;
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_phone TEXT;
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_vat_number TEXT;
 
+-- Add missing DELETE policy for quotes to allow the new Delete Quote button to work
+DROP POLICY IF EXISTS "Allow public delete to quotes" ON quotes;
+CREATE POLICY "Allow public delete to quotes" ON quotes FOR DELETE USING (true);
+
 -- Reload the Supabase PostgREST schema cache just to be safe
 NOTIFY pgrst, 'reload schema';

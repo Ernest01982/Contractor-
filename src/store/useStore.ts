@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { syncQuoteToSupabase, syncExpenseToSupabase, fetchQuotesFromSupabase, fetchExpensesFromSupabase, fetchProfileFromSupabase, syncProfileToSupabase, syncClientToSupabase, fetchClientsFromSupabase } from '../services/syncService';
+import { syncQuoteToSupabase, syncExpenseToSupabase, fetchQuotesFromSupabase, fetchExpensesFromSupabase, fetchProfileFromSupabase, syncProfileToSupabase, syncClientToSupabase, fetchClientsFromSupabase, deleteQuoteFromSupabase } from '../services/syncService';
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Deposit Paid' | 'In Progress' | 'Final Invoice Sent' | 'Fully Paid';
 export type JobType = 'Painting' | 'Tiling' | 'Plumbing' | 'Electrical' | 'General';
@@ -81,7 +81,7 @@ export interface UserProfile {
 }
 
 interface PendingSync {
-  type: 'quote' | 'expense' | 'client';
+  type: 'quote' | 'expense' | 'client' | 'delete-quote';
   id: string;
 }
 
@@ -102,6 +102,7 @@ interface AppState {
   addQuote: (quote: Partial<Quote> & Omit<Quote, 'id' | 'date' | 'updated_at'>) => void;
   updateQuoteStatus: (id: string, status: QuoteStatus) => void;
   updateQuote: (id: string, updates: Partial<Quote>) => void;
+  deleteQuote: (id: string) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   addExpense: (expense: Omit<Expense, 'id' | 'updated_at'>) => void;
   addClient: (client: Omit<Client, 'id' | 'updated_at'>) => void;
@@ -165,6 +166,16 @@ export const useStore = create<AppState>()(
         set((state) => ({
           quotes: state.quotes.map(q => q.id === id ? { ...q, ...updates, updated_at: now } : q),
           pendingSyncs: [...state.pendingSyncs, { type: 'quote', id }]
+        }));
+        if (navigator.onLine) {
+          get().syncFromSupabase();
+        }
+      },
+      deleteQuote: (id) => {
+        set((state) => ({
+          quotes: state.quotes.filter(q => q.id !== id),
+          // Queue a deletion
+          pendingSyncs: [...state.pendingSyncs, { type: 'delete-quote', id }]
         }));
         if (navigator.onLine) {
           get().syncFromSupabase();
@@ -265,6 +276,9 @@ export const useStore = create<AppState>()(
                     await syncClientToSupabase(client);
                     successfulSyncs.push(item);
                   }
+                } else if (item.type === 'delete-quote') {
+                  await deleteQuoteFromSupabase(item.id);
+                  successfulSyncs.push(item);
                 }
               } catch (err: any) {
                 const msg = err.message || String(err);
