@@ -9,15 +9,16 @@ CREATE TABLE IF NOT EXISTS clients (
   updated_at TIMESTAMPTZ
 );
 
--- ADD missing columns to the existing Quotes table
+-- 2. Add missing CRM columns to the existing Quotes table
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES clients(id) ON DELETE SET NULL;
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_name TEXT;
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_email TEXT;
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_phone TEXT;
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_vat_number TEXT;
 
--- Add missing DELETE policy for quotes to allow the new Delete Quote button to work
+-- 3. Add missing DELETE policy for quotes
 DROP POLICY IF EXISTS "Allow public delete to quotes" ON quotes;
 CREATE POLICY "Allow public delete to quotes" ON quotes FOR DELETE USING (true);
 
--- Reload the Supabase PostgREST schema cache just to be safe
+-- 4. Reload the Supabase PostgREST schema cache
 NOTIFY pgrst, 'reload schema';

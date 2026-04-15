@@ -251,10 +251,14 @@ export const useStore = create<AppState>()(
           
           if (pending.length > 0) {
             // Deduplicate pending syncs (keep only the latest for each ID)
-            const uniquePending = pending.filter((v, i, a) => {
+            let uniquePending = pending.filter((v, i, a) => {
               const lastIndex = a.length - 1 - [...a].reverse().findIndex(t => (t.id === v.id && t.type === v.type));
               return lastIndex === i;
             });
+
+            // Sort so that 'client' syncs happen first to prevent foreign key errors for quotes
+            const typePriority = { 'client': 0, 'quote': 1, 'expense': 2, 'delete-quote': 3 };
+            uniquePending.sort((a, b) => (typePriority[a.type as keyof typeof typePriority] ?? 5) - (typePriority[b.type as keyof typeof typePriority] ?? 5));
             
             for (const item of uniquePending) {
               try {
