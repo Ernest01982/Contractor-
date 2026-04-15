@@ -3,7 +3,7 @@ import { CheckCircle, Phone, MessageCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
-  const { updateQuoteStatus } = useStore();
+  const { updateQuoteStatus, profile } = useStore();
 
   useEffect(() => {
     // Automatically mark the quote as Paid when returning from successful payment
@@ -12,8 +12,17 @@ export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
     }
   }, [quoteId, updateQuoteStatus]);
 
+  const contractorPhone = profile?.phone ? profile.phone.replace(/[^0-9]/g, '') : '27821234567';
   const whatsappMessage = encodeURIComponent(`Hi, I have successfully paid the deposit for Quote #${quoteId.substring(0, 8).toUpperCase()}.`);
-  const whatsappUrl = `https://wa.me/27821234567?text=${whatsappMessage}`;
+  const whatsappUrl = `https://wa.me/${contractorPhone}?text=${whatsappMessage}`;
+
+  useEffect(() => {
+    // Automatically redirect to WhatsApp after 3 seconds
+    const timer = setTimeout(() => {
+      window.location.href = whatsappUrl;
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [whatsappUrl]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">

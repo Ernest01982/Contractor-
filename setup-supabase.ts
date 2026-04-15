@@ -54,33 +54,33 @@ ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for Quotes
 DROP POLICY IF EXISTS "Allow public read access to quotes" ON quotes;
-CREATE POLICY "Allow public read access to quotes" ON quotes FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow public read access to quotes" ON quotes FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert to quotes" ON quotes;
-CREATE POLICY "Allow public insert to quotes" ON quotes FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow public insert to quotes" ON quotes FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow public update to quotes" ON quotes;
-CREATE POLICY "Allow public update to quotes" ON quotes FOR UPDATE TO anon USING (true);
+CREATE POLICY "Allow public update to quotes" ON quotes FOR UPDATE USING (true);
 
 -- RLS Policies for Quote Items
 DROP POLICY IF EXISTS "Allow public read access to quote_items" ON quote_items;
-CREATE POLICY "Allow public read access to quote_items" ON quote_items FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow public read access to quote_items" ON quote_items FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert to quote_items" ON quote_items;
-CREATE POLICY "Allow public insert to quote_items" ON quote_items FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow public insert to quote_items" ON quote_items FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow public update to quote_items" ON quote_items;
-CREATE POLICY "Allow public update to quote_items" ON quote_items FOR UPDATE TO anon USING (true);
+CREATE POLICY "Allow public update to quote_items" ON quote_items FOR UPDATE USING (true);
 
 -- RLS Policies for Expenses
 DROP POLICY IF EXISTS "Allow public read access to expenses" ON expenses;
-CREATE POLICY "Allow public read access to expenses" ON expenses FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow public read access to expenses" ON expenses FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert to expenses" ON expenses;
-CREATE POLICY "Allow public insert to expenses" ON expenses FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow public insert to expenses" ON expenses FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow public update to expenses" ON expenses;
-CREATE POLICY "Allow public update to expenses" ON expenses FOR UPDATE TO anon USING (true);
+CREATE POLICY "Allow public update to expenses" ON expenses FOR UPDATE USING (true);
 `;
 
 async function run() {
