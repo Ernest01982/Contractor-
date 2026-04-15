@@ -4,11 +4,25 @@ const token = 'sbp_36fb401ff06ac3c5ececeee31f50c7a72676964f';
 const ref = 'psyzfnepaqtzlxjdulva';
 
 const sql = `
+-- Create Clients Table
+CREATE TABLE IF NOT EXISTS clients (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  vat_number TEXT,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
 -- Create Quotes Table
 CREATE TABLE IF NOT EXISTS quotes (
   id UUID PRIMARY KEY,
+  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
   client_name TEXT NOT NULL,
+  client_email TEXT,
   client_phone TEXT,
+  client_vat_number TEXT,
   subtotal NUMERIC,
   has_vat BOOLEAN,
   vat_amount NUMERIC,
@@ -16,7 +30,8 @@ CREATE TABLE IF NOT EXISTS quotes (
   deposit_percentage NUMERIC,
   deposit_amount NUMERIC,
   status TEXT,
-  date TIMESTAMPTZ
+  date TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
 );
 
 -- Create Quote Items Table
@@ -48,9 +63,20 @@ CREATE TABLE IF NOT EXISTS expenses (
 );
 
 -- Enable RLS
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for Clients
+DROP POLICY IF EXISTS "Allow public read access to clients" ON clients;
+CREATE POLICY "Allow public read access to clients" ON clients FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert to clients" ON clients;
+CREATE POLICY "Allow public insert to clients" ON clients FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update to clients" ON clients;
+CREATE POLICY "Allow public update to clients" ON clients FOR UPDATE USING (true);
 
 -- RLS Policies for Quotes
 DROP POLICY IF EXISTS "Allow public read access to quotes" ON quotes;

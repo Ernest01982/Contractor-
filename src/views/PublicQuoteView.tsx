@@ -114,6 +114,12 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
     }
   };
 
+  const isFinalInvoice = quote.status === 'Final Invoice Sent';
+  const amountToPay = isFinalInvoice ? (quote.total_amount - quote.deposit_amount) : quote.deposit_amount;
+  const payfastItemName = isFinalInvoice 
+    ? `Final Payment for Invoice #${quote.id.substring(0, 8)}` 
+    : `Deposit for Quote #${quote.id.substring(0, 8)}`;
+
   return (
     <div className="min-h-screen bg-slate-100 py-8 px-4 font-sans text-slate-900">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -149,26 +155,35 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           )}
 
-          {quote.status === 'Accepted' && (
+          {(quote.status === 'Accepted' || isFinalInvoice) && (
             <div className="space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-                <p className="text-emerald-700 font-medium flex items-center justify-center gap-2">
-                  <CheckCircle size={20} /> You have accepted this quote.
-                </p>
-              </div>
+              {quote.status === 'Accepted' && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+                  <p className="text-emerald-700 font-medium flex items-center justify-center gap-2">
+                    <CheckCircle size={20} /> You have accepted this quote.
+                  </p>
+                </div>
+              )}
+              {isFinalInvoice && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                  <p className="text-blue-700 font-medium flex items-center justify-center gap-2">
+                    <CheckCircle size={20} /> Job Complete. Final payment requested.
+                  </p>
+                </div>
+              )}
               <form action="https://sandbox.payfast.co.za/eng/process" method="POST">
                 <input type="hidden" name="merchant_id" value="10004002" />
                 <input type="hidden" name="merchant_key" value="q1cd2rdny4a53" />
                 <input type="hidden" name="return_url" value={`${window.location.origin}/?success=true&quoteId=${quote.id}`} />
                 <input type="hidden" name="cancel_url" value={`${window.location.origin}/?quoteId=${quote.id}`} />
-                <input type="hidden" name="amount" value={quote.deposit_amount.toFixed(2)} />
-                <input type="hidden" name="item_name" value={`Deposit for Quote #${quote.id.substring(0, 8)}`} />
+                <input type="hidden" name="amount" value={amountToPay.toFixed(2)} />
+                <input type="hidden" name="item_name" value={payfastItemName} />
                 
                 <button 
                   type="submit"
                   className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-600/20"
                 >
-                  Pay Deposit via PayFast
+                  Pay {isFinalInvoice ? 'Outstanding Balance' : 'Deposit'} via PayFast
                 </button>
               </form>
             </div>
@@ -203,7 +218,9 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
               <p className="text-slate-500 text-sm mt-1">123 Builder Street<br/>Cape Town, 8001<br/>contact@contractorpro.co.za</p>
             </div>
             <div className="text-right">
-              <h2 className="text-3xl font-bold text-slate-200 uppercase tracking-tight mb-2">Quote</h2>
+              <h2 className="text-3xl font-bold text-slate-200 uppercase tracking-tight mb-2">
+                {isFinalInvoice ? 'Tax Invoice' : 'Quote'}
+              </h2>
               <p className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-1">Billed To</p>
               <p className="font-bold text-lg text-slate-900">{quote.client_name}</p>
               {quote.client_phone && <p className="text-slate-600">{quote.client_phone}</p>}
@@ -257,11 +274,21 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           </div>
 
-          {/* Deposit Callout */}
+          {/* Deposit / Payment Callout */}
           <div className="mt-10 bg-emerald-50 rounded-xl p-6 border border-emerald-100 text-center">
-            <p className="text-sm text-emerald-800 uppercase tracking-wider font-semibold mb-2">Deposit Required to Schedule</p>
-            <p className="text-3xl font-bold text-emerald-600">{formatCurrency(quote.deposit_amount)}</p>
-            <p className="text-sm text-emerald-700 mt-2">({quote.deposit_percentage}% of Total)</p>
+            {isFinalInvoice ? (
+              <>
+                <p className="text-sm text-emerald-800 uppercase tracking-wider font-semibold mb-2">Final Balance Due</p>
+                <p className="text-3xl font-bold text-emerald-600">{formatCurrency(amountToPay)}</p>
+                <p className="text-sm text-emerald-700 mt-2">(Total {formatCurrency(quote.total_amount)} less Deposit Paid {formatCurrency(quote.deposit_amount)})</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-emerald-800 uppercase tracking-wider font-semibold mb-2">Deposit Required to Schedule</p>
+                <p className="text-3xl font-bold text-emerald-600">{formatCurrency(amountToPay)}</p>
+                <p className="text-sm text-emerald-700 mt-2">({quote.deposit_percentage}% of Total)</p>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -3,17 +3,27 @@ import { CheckCircle, Phone, MessageCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
-  const { updateQuoteStatus, profile } = useStore();
+  const { updateQuoteStatus, profile, quotes } = useStore();
+  const quote = quotes.find(q => q.id === quoteId);
+  const isFinalInvoice = quote?.status === 'Final Invoice Sent' || quote?.status === 'Fully Paid';
 
   useEffect(() => {
-    // Automatically mark the quote as Paid when returning from successful payment
-    if (quoteId) {
-      updateQuoteStatus(quoteId, 'Paid');
+    // Automatically mark the quote as Paid
+    if (quoteId && quote) {
+      if (quote.status === 'Sent' || quote.status === 'Accepted') {
+        updateQuoteStatus(quoteId, 'Deposit Paid');
+      } else if (quote.status === 'Final Invoice Sent') {
+        updateQuoteStatus(quoteId, 'Fully Paid');
+      }
     }
-  }, [quoteId, updateQuoteStatus]);
+  }, [quoteId, quote?.status, updateQuoteStatus]);
 
   const contractorPhone = profile?.phone ? profile.phone.replace(/[^0-9]/g, '') : '27821234567';
-  const whatsappMessage = encodeURIComponent(`Hi, I have successfully paid the deposit for Quote #${quoteId.substring(0, 8).toUpperCase()}.`);
+  const whatsappMessage = encodeURIComponent(
+    isFinalInvoice 
+      ? `Hi, I have successfully paid the final balance for Tax Invoice #${quoteId.substring(0, 8).toUpperCase()}.`
+      : `Hi, I have successfully paid the deposit for Quote #${quoteId.substring(0, 8).toUpperCase()}.`
+  );
   const whatsappUrl = `https://wa.me/${contractorPhone}?text=${whatsappMessage}`;
 
   useEffect(() => {
@@ -33,7 +43,11 @@ export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
         
         <div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Payment Successful!</h1>
-          <p className="text-slate-500">Thank you for your deposit. The contractor has been notified and your job is now active.</p>
+          <p className="text-slate-500">
+            {isFinalInvoice 
+              ? "Thank you for your final payment. Your job is now complete."
+              : "Thank you for your deposit. The contractor has been notified and your job is now active."}
+          </p>
         </div>
 
         <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-3">

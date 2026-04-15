@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2, Shield } from 'lucide-react';
+import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2, Shield, Wallet, Banknote } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { QuoteBuilder } from '../components/QuoteBuilder';
 
@@ -8,10 +8,16 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
   const [showBuilder, setShowBuilder] = useState(false);
 
   const pendingDeposits = quotes
-    .filter(q => q.status === 'Sent')
-    .reduce((sum, q) => sum + q.total_amount, 0);
+    .filter(q => q.status === 'Sent' || q.status === 'Accepted')
+    .reduce((sum, q) => sum + q.deposit_amount, 0);
 
-  const activeJobs = quotes.filter(q => q.status === 'Sent' || q.status === 'Paid');
+  const activeJobs = quotes.filter(q => q.status === 'Deposit Paid' || q.status === 'In Progress');
+
+  const pendingFinalPayments = quotes
+    .filter(q => q.status === 'Final Invoice Sent')
+    .reduce((sum, q) => sum + (q.total_amount - q.deposit_amount), 0);
+
+  const completedJobs = quotes.filter(q => q.status === 'Fully Paid');
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
@@ -47,17 +53,31 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-sm">
           <div className="flex items-center gap-2 text-slate-400 mb-2">
-            <Clock size={18} />
-            <h2 className="text-sm font-medium">Pending (ZAR)</h2>
+            <Clock size={16} />
+            <h2 className="text-xs font-medium uppercase tracking-wider">Pending Deposits</h2>
           </div>
-          <p className="text-2xl font-bold text-slate-50">{formatCurrency(pendingDeposits)}</p>
+          <p className="text-xl font-bold text-slate-50">{formatCurrency(pendingDeposits)}</p>
         </div>
         <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-sm">
           <div className="flex items-center gap-2 text-slate-400 mb-2">
-            <CheckCircle2 size={18} />
-            <h2 className="text-sm font-medium">Active Jobs</h2>
+            <CheckCircle2 size={16} />
+            <h2 className="text-xs font-medium uppercase tracking-wider">Jobs In Progress</h2>
           </div>
-          <p className="text-2xl font-bold text-slate-50">{activeJobs.length}</p>
+          <p className="text-xl font-bold text-slate-50">{activeJobs.length}</p>
+        </div>
+        <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-400 mb-2">
+            <Banknote size={16} />
+            <h2 className="text-xs font-medium uppercase tracking-wider">Pending Final</h2>
+          </div>
+          <p className="text-xl font-bold text-slate-50">{formatCurrency(pendingFinalPayments)}</p>
+        </div>
+        <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-400 mb-2">
+            <Wallet size={16} />
+            <h2 className="text-xs font-medium uppercase tracking-wider">Completed</h2>
+          </div>
+          <p className="text-xl font-bold text-slate-50">{completedJobs.length}</p>
         </div>
       </div>
 
@@ -153,9 +173,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
               <div className="text-right">
                 <p className="font-semibold text-slate-50">{formatCurrency(quote.total_amount)}</p>
                 <span className={`text-xs font-medium px-2 py-1 rounded-full inline-block mt-1 ${
-                  quote.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-500' :
-                  quote.status === 'Accepted' ? 'bg-emerald-500/10 text-emerald-400' :
-                  quote.status === 'Sent' ? 'bg-blue-500/10 text-blue-400' :
+                  quote.status === 'Fully Paid' ? 'bg-emerald-500/10 text-emerald-500' :
+                  quote.status === 'Deposit Paid' ? 'bg-emerald-500/10 text-emerald-400' :
+                  quote.status === 'In Progress' ? 'bg-blue-500/10 text-blue-400' :
+                  quote.status === 'Accepted' ? 'bg-yellow-500/10 text-yellow-500' :
+                  quote.status === 'Sent' || quote.status === 'Final Invoice Sent' ? 'bg-purple-500/10 text-purple-400' :
                   quote.status === 'Declined' ? 'bg-red-500/10 text-red-400' :
                   'bg-slate-700 text-slate-300'
                 }`}>

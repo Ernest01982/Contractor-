@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Quote, Expense } from '../store/useStore';
+import { Quote, Expense, Client } from '../store/useStore';
 
 export const syncQuoteToSupabase = async (quote: Quote) => {
   try {
@@ -10,8 +10,11 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
       .from('quotes')
       .upsert({
         id: quote.id,
+        client_id: quote.client_id,
         client_name: quote.client_name,
+        client_email: quote.client_email,
         client_phone: quote.client_phone,
+        client_vat_number: quote.client_vat_number,
         subtotal: quote.subtotal,
         has_vat: quote.has_vat,
         vat_amount: quote.vat_amount,
@@ -100,8 +103,11 @@ export const fetchQuotesFromSupabase = async (): Promise<Quote[]> => {
 
     return (quotesData || []).map((q: any) => ({
       id: q.id,
+      client_id: q.client_id,
       client_name: q.client_name,
+      client_email: q.client_email,
       client_phone: q.client_phone,
+      client_vat_number: q.client_vat_number,
       subtotal: q.subtotal,
       has_vat: q.has_vat,
       vat_amount: q.vat_amount,
@@ -136,6 +142,41 @@ export const fetchExpensesFromSupabase = async (): Promise<Expense[]> => {
     }));
   } catch (error) {
     console.error('Failed to fetch expenses:', error);
+    return [];
+  }
+};
+
+export const syncClientToSupabase = async (client: Client) => {
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .upsert({
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        vat_number: client.vat_number,
+        updated_at: client.updated_at
+      }, { onConflict: 'id' });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Failed to sync client to Supabase:', error);
+    throw error;
+  }
+};
+
+export const fetchClientsFromSupabase = async (): Promise<Client[]> => {
+  try {
+    const { data, error } = await supabase.from('clients').select('*');
+    if (error) return [];
+    
+    return (data || []).map((c: any) => ({
+      ...c,
+      updated_at: c.updated_at || c.created_at || new Date().toISOString()
+    }));
+  } catch (error) {
+    console.error('Failed to fetch clients:', error);
     return [];
   }
 };
@@ -175,8 +216,11 @@ export const fetchQuoteById = async (id: string): Promise<Quote | null> => {
 
     return {
       id: data.id,
+      client_id: data.client_id,
       client_name: data.client_name,
+      client_email: data.client_email,
       client_phone: data.client_phone,
+      client_vat_number: data.client_vat_number,
       subtotal: data.subtotal,
       has_vat: data.has_vat,
       vat_amount: data.vat_amount,

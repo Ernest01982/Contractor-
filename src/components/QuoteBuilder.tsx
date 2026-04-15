@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore, JobType, QuoteItem, SurfaceType } from '../store/useStore';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Check, Save, Mic, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,18 +8,42 @@ import html2canvas from 'html2canvas';
 
 interface QuoteBuilderProps {
   onClose: () => void;
+  editingQuoteId?: string;
 }
 
-export function QuoteBuilder({ onClose }: QuoteBuilderProps) {
-  const { addQuote, serviceLibrary, addServiceToLibrary } = useStore();
+export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
+  const { quotes, addQuote, updateQuote, serviceLibrary, addServiceToLibrary, clients, addClient, updateClient } = useStore();
   const [step, setStep] = useState(1);
   
   // Form State
+  const [selectedClientId, setSelectedClientId] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientVat, setClientVat] = useState('');
+  const [saveClient, setSaveClient] = useState(true);
+
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [hasVat, setHasVat] = useState(false);
   const [depositPercentage, setDepositPercentage] = useState(50);
+
+  // Initialize if editing
+  useEffect(() => {
+    if (editingQuoteId) {
+      const q = quotes.find(q => q.id === editingQuoteId);
+      if (q) {
+        setClientName(q.client_name);
+        setClientPhone(q.client_phone);
+        setClientEmail(q.client_email || '');
+        setClientVat(q.client_vat_number || '');
+        if (q.client_id) setSelectedClientId(q.client_id);
+        
+        setItems(q.items);
+        setHasVat(q.has_vat);
+        setDepositPercentage(q.deposit_percentage);
+      }
+    }
+  }, [editingQuoteId, quotes]);
 
   // New Item State
   const [jobType, setJobType] = useState<JobType>('General');
@@ -274,11 +298,34 @@ export function QuoteBuilder({ onClose }: QuoteBuilderProps) {
         window.open(whatsappUrl, '_blank');
       }
 
+      let activeClientId = selectedClientId;
+      if (saveClient) {
+        if (selectedClientId) {
+          updateClient(selectedClientId, {
+            name: clientName,
+            phone: clientPhone,
+            email: clientEmail,
+            vat_number: clientVat
+          });
+        } else {
+          const newClientId = uuidv4();
+          addClient({
+            name: clientName,
+            phone: clientPhone,
+            email: clientEmail,
+            vat_number: clientVat
+          });
+          activeClientId = newClientId;
+        }
+      }
+
       // 4. Save Quote
-      addQuote({
-        id: quoteId,
+      const quoteData = {
+        client_id: activeClientId || undefined,
         client_name: clientName,
         client_phone: clientPhone,
+        client_email: clientEmail,
+        client_vat_number: clientVat,
         items,
         subtotal: quoteSubtotal,
         has_vat: hasVat,
@@ -286,9 +333,18 @@ export function QuoteBuilder({ onClose }: QuoteBuilderProps) {
         total_amount: totalAmount,
         deposit_percentage: depositPercentage,
         deposit_amount: depositAmount,
-        status: 'Sent',
-        date: new Date().toISOString()
-      });
+      };
+
+      if (editingQuoteId) {
+        updateQuote(editingQuoteId, quoteData);
+      } else {
+        addQuote({
+          ...quoteData,
+          id: quoteId,
+          status: 'Sent',
+          date: new Date().toISOString()
+        });
+      }
 
       onClose();
     } catch (error) {
@@ -336,8 +392,41 @@ export function QuoteBuilder({ onClose }: QuoteBuilderProps) {
             </div>
             
             <div className="space-y-4">
+              {clients.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Select Existing Client</label>
+                  <select 
+                    value={selectedClientId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setSelectedClientId(id);
+                      if (id) {
+                        const c = clients.find(c => c.id === id);
+                        if (c) {
+                          setClientName(c.name);
+                          setClientPhone(c.phone);
+                          setClientEmail(c.email || '');
+                          setClientVat(c.vat_number || '');
+                        }
+                      } else {
+                        setClientName('');
+                        setClientPhone('');
+                        setClientEmail('');
+                        setClientVat('');
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-50 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="">-- New Client --</option>
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Client Name</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Client Name *</label>
                 <input 
                   type="text" 
                   value={clientName}
@@ -348,7 +437,7 @@ export function QuoteBuilder({ onClose }: QuoteBuilderProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Client Phone (WhatsApp)</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Client Phone (WhatsApp) *</label>
                 <input 
                   type="tel" 
                   value={clientPhone}
@@ -356,6 +445,39 @@ export function QuoteBuilder({ onClose }: QuoteBuilderProps) {
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-50 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   placeholder="e.g. 082 123 4567"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
+                  <input 
+                    type="email" 
+                    value={clientEmail}
+                    onChange={e => setClientEmail(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-50 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">VAT Number</label>
+                  <input 
+                    type="text" 
+                    value={clientVat}
+                    onChange={e => setClientVat(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-50 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={saveClient}
+                    onChange={e => setSaveClient(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 bg-slate-950"
+                  />
+                  Save/Update client in CRM
+                </label>
               </div>
             </div>
           </div>

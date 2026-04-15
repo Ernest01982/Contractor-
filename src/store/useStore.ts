@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { syncQuoteToSupabase, syncExpenseToSupabase, fetchQuotesFromSupabase, fetchExpensesFromSupabase, fetchProfileFromSupabase, syncProfileToSupabase } from '../services/syncService';
+import { syncQuoteToSupabase, syncExpenseToSupabase, fetchQuotesFromSupabase, fetchExpensesFromSupabase, fetchProfileFromSupabase, syncProfileToSupabase, syncClientToSupabase, fetchClientsFromSupabase } from '../services/syncService';
 
-export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Paid';
+export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Deposit Paid' | 'In Progress' | 'Final Invoice Sent' | 'Fully Paid';
 export type JobType = 'Painting' | 'Tiling' | 'Plumbing' | 'Electrical' | 'General';
 export type SurfaceType = 'Ceiling/Roof' | 'Floor' | 'Wall';
 
@@ -24,8 +24,11 @@ export interface QuoteItem {
 
 export interface Quote {
   id: string;
+  client_id?: string;
   client_name: string;
+  client_email?: string;
   client_phone: string;
+  client_vat_number?: string;
   items: QuoteItem[];
   subtotal: number;
   has_vat: boolean;
@@ -57,6 +60,15 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  vat_number: string;
+  updated_at: string;
+}
+
 export interface UserProfile {
   user_id: string;
   company_name: string;
@@ -69,13 +81,14 @@ export interface UserProfile {
 }
 
 interface PendingSync {
-  type: 'quote' | 'expense';
+  type: 'quote' | 'expense' | 'client';
   id: string;
 }
 
 interface AppState {
   quotes: Quote[];
   expenses: Expense[];
+  clients: Client[];
   serviceLibrary: ServiceLibraryItem[];
   pendingSyncs: PendingSync[];
   profile: UserProfile | null;
@@ -88,8 +101,11 @@ interface AppState {
   bookkeeperLastAccessed: string | null;
   addQuote: (quote: Partial<Quote> & Omit<Quote, 'id' | 'date' | 'updated_at'>) => void;
   updateQuoteStatus: (id: string, status: QuoteStatus) => void;
+  updateQuote: (id: string, updates: Partial<Quote>) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   addExpense: (expense: Omit<Expense, 'id' | 'updated_at'>) => void;
+  addClient: (client: Omit<Client, 'id' | 'updated_at'>) => void;
+  updateClient: (id: string, updates: Partial<Client>) => void;
   addServiceToLibrary: (service: Omit<ServiceLibraryItem, 'id'>) => void;
   setOfflineStatus: (status: boolean) => void;
   setAuthenticated: (status: boolean) => void;
@@ -104,6 +120,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       quotes: [],
       expenses: [],
+      clients: [],
       serviceLibrary: [],
       pendingSyncs: [],
       profile: null,
@@ -143,6 +160,16 @@ export const useStore = create<AppState>()(
           get().syncFromSupabase();
         }
       },
+      updateQuote: (id, updates) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          quotes: state.quotes.map(q => q.id === id ? { ...q, ...updates, updated_at: now } : q),
+          pendingSyncs: [...state.pendingSyncs, { type: 'quote', id }]
+        }));
+        if (navigator.onLine) {
+          get().syncFromSupabase();
+        }
+      },
       updateProfile: (updates) => {
         set((state) => {
           const newProfile = state.profile ? { ...state.profile, ...updates } : updates as UserProfile;
@@ -163,6 +190,23 @@ export const useStore = create<AppState>()(
         if (navigator.onLine) {
           get().syncFromSupabase();
         }
+      },
+      addClient: (client) => {
+        const now = new Date().toISOString();
+        const newClient = { ...client, id: uuidv4(), updated_at: now } as Client;
+        set((state) => ({
+          clients: [newClient, ...state.clients],
+          pendingSyncs: [...state.pendingSyncs, { type: 'client', id: newClient.id }]
+        }));
+        if (navigator.onLine) get().syncFromSupabase();
+      },
+      updateClient: (id, updates) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          clients: state.clients.map(c => c.id === id ? { ...c, ...updates, updated_at: now } : c),
+          pendingSyncs: [...state.pendingSyncs, { type: 'client', id }]
+        }));
+        if (navigator.onLine) get().syncFromSupabase();
       },
       addServiceToLibrary: (service) => set((state) => ({
         serviceLibrary: [...state.serviceLibrary, { ...service, id: uuidv4() }]
@@ -215,6 +259,12 @@ export const useStore = create<AppState>()(
                     await syncExpenseToSupabase(expense);
                     successfulSyncs.push(item);
                   }
+                } else if (item.type === 'client') {
+                  const client = state.clients.find(c => c.id === item.id);
+                  if (client) {
+                    await syncClientToSupabase(client);
+                    successfulSyncs.push(item);
+                  }
                 }
               } catch (err: any) {
                 const msg = err.message || String(err);
@@ -232,10 +282,11 @@ export const useStore = create<AppState>()(
           }
           
           // 2. Fetch latest from remote
-          const [remoteQuotes, remoteExpenses, remoteProfile] = await Promise.all([
+          const [remoteQuotes, remoteExpenses, remoteProfile, remoteClients] = await Promise.all([
             fetchQuotesFromSupabase(),
             fetchExpensesFromSupabase(),
-            fetchProfileFromSupabase()
+            fetchProfileFromSupabase(),
+            fetchClientsFromSupabase()
           ]);
 
           set((currentState) => {
@@ -262,15 +313,28 @@ export const useStore = create<AppState>()(
               }
             });
 
+            const clientMap = new Map<string, Client>();
+            currentState.clients.forEach(c => clientMap.set(c.id, c));
+            remoteClients.forEach(remoteC => {
+              const localC = clientMap.get(remoteC.id);
+              if (!localC || new Date(remoteC.updated_at) > new Date(localC.updated_at)) {
+                clientMap.set(remoteC.id, remoteC);
+              }
+            });
+
             const mergedQuotes = Array.from(quoteMap.values())
               .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             
             const mergedExpenses = Array.from(expenseMap.values())
               .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+            const mergedClients = Array.from(clientMap.values())
+              .sort((a, b) => a.name.localeCompare(b.name));
+
             return {
               quotes: mergedQuotes,
               expenses: mergedExpenses,
+              clients: mergedClients,
               profile: remoteProfile || currentState.profile,
               isSyncing: false
             };
