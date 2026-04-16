@@ -4,10 +4,12 @@ import { Plus, Search, FileText, Edit2, MessageCircle, Mail, Trash2 } from 'luci
 import { QuoteBuilder } from '../components/QuoteBuilder';
 
 export function Quotes() {
-  const { quotes, updateQuoteStatus, deleteQuote } = useStore();
+  const { quotes, updateQuoteStatus, updateQuote, deleteQuote } = useStore();
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | undefined>();
   const [filter, setFilter] = useState<'All' | 'Pending' | 'Active' | 'Past'>('All');
+  const [schedulingQuoteId, setSchedulingQuoteId] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState('');
 
   const handleEdit = (id: string) => {
     setEditingQuoteId(id);
@@ -45,6 +47,33 @@ export function Quotes() {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+  };
+
+  const generateGoogleCalendarLink = (quote: any, dateString: string) => {
+    const startDate = new Date(dateString);
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // Assume 2 hours default
+    const formatForGCal = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, '');
+    const text = encodeURIComponent(`Contractor Work: ${quote.client_name}`);
+    const details = encodeURIComponent(`Work starting for Quote #${quote.id.substring(0,8)}.\nView Quote: ${window.location.origin}/?quoteId=${quote.id}`);
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${formatForGCal(startDate)}/${formatForGCal(endDate)}&details=${details}&sprop=&sprop=name:`;
+  };
+
+  const handleScheduleConfirm = () => {
+    if (!schedulingQuoteId || !scheduleDate) return;
+    const quote = quotes.find(q => q.id === schedulingQuoteId);
+    if (!quote) return;
+
+    const calendarLink = generateGoogleCalendarLink(quote, scheduleDate);
+    const displayDate = new Date(scheduleDate).toLocaleString();
+    let message = `Hi ${quote.client_name}, your job has been scheduled to start on ${displayDate}. Please click here to add it to your Google Calendar and set a reminder: ${calendarLink}`;
+    
+    let phone = quote.client_phone.replace(/\D/g, '');
+    if (phone.startsWith('0')) phone = '27' + phone.substring(1);
+    
+    updateQuote(schedulingQuoteId, { status: 'Scheduled', scheduled_date: scheduleDate });
+    setSchedulingQuoteId(null);
+    setScheduleDate('');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -86,8 +115,8 @@ export function Quotes() {
       <div className="space-y-3">
         {quotes.filter(q => {
           if (filter === 'Pending') return q.status === 'Draft' || q.status === 'Sent' || q.status === 'Accepted';
-          if (filter === 'Active') return q.status === 'Deposit Paid' || q.status === 'In Progress';
-          if (filter === 'Past') return q.status === 'Final Invoice Sent' || q.status === 'Fully Paid' || q.status === 'Declined';
+          if (filter === 'Active') return q.status === 'Deposit Paid' || q.status === 'Scheduled' || q.status === 'In Progress' || q.status === 'Finished';
+          if (filter === 'Past') return q.status === 'Final Invoice Sent' || q.status === 'Fully Paid' || q.status === 'Declined' || q.status === 'Payment Failed';
           return true;
         }).map(quote => (
           <div key={quote.id} className="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col gap-3">
@@ -104,35 +133,67 @@ export function Quotes() {
               <p className="font-bold text-slate-50">{formatCurrency(quote.total_amount)}</p>
             </div>
             
-            <div className="flex flex-col gap-2 pt-2 border-t border-slate-700/50">
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  quote.status === 'Fully Paid' ? 'bg-emerald-500/10 text-emerald-500' :
-                  quote.status === 'Deposit Paid' ? 'bg-emerald-500/10 text-emerald-400' :
-                  quote.status === 'In Progress' ? 'bg-blue-500/10 text-blue-400' :
-                  quote.status === 'Accepted' ? 'bg-yellow-500/10 text-yellow-500' :
-                  quote.status === 'Sent' || quote.status === 'Final Invoice Sent' ? 'bg-purple-500/10 text-purple-400' :
-                  quote.status === 'Declined' ? 'bg-red-500/10 text-red-400' :
-                  'bg-slate-700 text-slate-300'
-                }`}>
-                  {quote.status}
-                </span>
-                
-                <select 
-                  value={quote.status}
-                  onChange={(e) => updateQuoteStatus(quote.id, e.target.value as QuoteStatus)}
-                  className="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-500 min-h-[44px] max-w-[150px]"
-                >
-                  <option value="Draft">Draft</option>
-                  <option value="Sent">Sent</option>
-                  <option value="Accepted">Accepted</option>
-                  <option value="Declined">Declined</option>
-                  <option value="Deposit Paid">Deposit Paid</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Final Invoice Sent">Final Inv Sent</option>
-                  <option value="Fully Paid">Fully Paid</option>
-                </select>
-              </div>
+            <div className="flex flex-col gap-3 pt-3 border-t border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    quote.status === 'Fully Paid' ? 'bg-emerald-500/10 text-emerald-500' :
+                    quote.status === 'Deposit Paid' || quote.status === 'Scheduled' ? 'bg-emerald-500/10 text-emerald-400' :
+                    quote.status === 'In Progress' ? 'bg-blue-500/10 text-blue-400' :
+                    quote.status === 'Finished' ? 'bg-indigo-500/10 text-indigo-400' :
+                    quote.status === 'Accepted' ? 'bg-yellow-500/10 text-yellow-500' :
+                    quote.status === 'Sent' || quote.status === 'Final Invoice Sent' ? 'bg-purple-500/10 text-purple-400' :
+                    quote.status === 'Declined' || quote.status === 'Payment Failed' ? 'bg-red-500/10 text-red-400' :
+                    'bg-slate-700 text-slate-300'
+                  }`}>
+                    {quote.status}
+                  </span>
+                  
+                  <div className="flex gap-2">
+                    {quote.status === 'Deposit Paid' && (
+                      <button onClick={() => setSchedulingQuoteId(quote.id)} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                        Schedule Work
+                      </button>
+                    )}
+                    {quote.status === 'Scheduled' && (
+                      <button onClick={() => updateQuoteStatus(quote.id, 'In Progress')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                        Start Work
+                      </button>
+                    )}
+                    {quote.status === 'In Progress' && (
+                      <button onClick={() => updateQuoteStatus(quote.id, 'Finished')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                        Finish Work
+                      </button>
+                    )}
+                    {quote.status === 'Finished' && (
+                      <button onClick={() => {
+                        updateQuoteStatus(quote.id, 'Final Invoice Sent');
+                        handleWhatsApp({ ...quote, status: 'Final Invoice Sent' });
+                      }} className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                        Send Final Invoice
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {schedulingQuoteId === quote.id && (
+                  <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl flex flex-col gap-2">
+                    <label className="text-xs text-slate-400 font-medium">Select Start Date & Time</label>
+                    <input 
+                      type="datetime-local" 
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                    <div className="flex gap-2 mt-1">
+                      <button onClick={handleScheduleConfirm} disabled={!scheduleDate} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold py-2 rounded-lg transition-colors">
+                        Confirm & Send
+                      </button>
+                      <button onClick={() => setSchedulingQuoteId(null)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold py-2 rounded-lg transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               
               <div className="flex justify-end gap-2 mt-2">
                 <button onClick={() => handleEdit(quote.id)} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 transition-colors" title="Edit Quote">
