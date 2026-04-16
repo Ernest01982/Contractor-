@@ -73,6 +73,10 @@ export interface Client {
 export interface UserProfile {
   user_id: string;
   company_name: string;
+  contractor_name: string;
+  address: string;
+  logo_url?: string;
+  services: JobType[];
   vat_number: string;
   phone: string;
   email: string;
