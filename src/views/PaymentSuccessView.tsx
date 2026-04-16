@@ -57,14 +57,6 @@ export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
     ? `https://wa.me/${contractorPhone}?text=${whatsappMessage}`
     : `https://wa.me/?text=${whatsappMessage}`;
 
-  useEffect(() => {
-    // Automatically redirect to WhatsApp after 3 seconds
-    const timer = setTimeout(() => {
-      window.location.href = whatsappUrl;
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [whatsappUrl]);
-
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
       <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center max-w-md w-full space-y-6 animate-in zoom-in-95 duration-500">
@@ -82,14 +74,15 @@ export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
         </div>
 
         <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-3">
-          <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Next Steps</p>
+          <p className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-2 animate-pulse">Required Final Step</p>
+          <p className="text-sm text-slate-600 pb-2">Please tap the button below to notify your contractor that the payment was successful.</p>
           
           <a 
             href={whatsappUrl}
-            className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-medium transition-colors shadow-lg shadow-emerald-600/20"
+            className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-bold text-lg transition-colors shadow-lg shadow-emerald-600/20"
           >
-            <MessageCircle size={20} />
-            Return to WhatsApp
+            <MessageCircle size={24} />
+            Send WhatsApp Receipt
           </a>
 
           {contractorPhone && (
