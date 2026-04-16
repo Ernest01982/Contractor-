@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { syncQuoteToSupabase, syncExpenseToSupabase, fetchQuotesFromSupabase, fetchExpensesFromSupabase, fetchProfileFromSupabase, syncProfileToSupabase, syncClientToSupabase, fetchClientsFromSupabase, deleteQuoteFromSupabase } from '../services/syncService';
 
-export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Deposit Paid' | 'In Progress' | 'Final Invoice Sent' | 'Fully Paid';
+export type QuoteStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Deposit Paid' | 'Scheduled' | 'In Progress' | 'Finished' | 'Final Invoice Sent' | 'Fully Paid' | 'Payment Failed';
 export type JobType = 'Painting' | 'Tiling' | 'Plumbing' | 'Electrical' | 'General';
 export type SurfaceType = 'Ceiling/Roof' | 'Floor' | 'Wall';
 
@@ -37,6 +37,7 @@ export interface Quote {
   deposit_percentage: number;
   deposit_amount: number;
   status: QuoteStatus;
+  scheduled_date?: string;
   date: string;
   updated_at: string;
 }
