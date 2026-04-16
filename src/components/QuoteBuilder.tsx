@@ -1,8 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore, JobType, QuoteItem, SurfaceType } from '../store/useStore';
-import { Plus, Trash2, ChevronRight, ChevronLeft, Check, Save, Mic, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronLeft, Check, Save, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { parseVoiceToQuote } from '../services/gemini';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -56,12 +55,6 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
   const [quantity, setQuantity] = useState('1');
   const [unitPrice, setUnitPrice] = useState('');
   const [saveToLibrary, setSaveToLibrary] = useState(false);
-
-  // Voice AI State
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
-  const [aiParsedItems, setAiParsedItems] = useState<any[]>([]);
-  const recognitionRef = useRef<any>(null);
 
   // PDF State
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -139,90 +132,6 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
     setUnitPrice('');
     setSurfaceType('Wall');
     setSaveToLibrary(false);
-  };
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-ZA';
-
-    recognition.onstart = () => setIsRecording(true);
-    
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsRecording(false);
-      setIsProcessingVoice(true);
-      
-      try {
-        const parsed = await parseVoiceToQuote(transcript);
-        setAiParsedItems(parsed);
-      } catch (error) {
-        alert("Failed to parse voice input. Please try again.");
-      } finally {
-        setIsProcessingVoice(false);
-      }
-    };
-
-    recognition.onerror = () => {
-      setIsRecording(false);
-      setIsProcessingVoice(false);
-    };
-
-    recognition.onend = () => setIsRecording(false);
-
-    recognitionRef.current = recognition;
-    recognition.start();
-  };
-
-  const acceptAiItems = () => {
-    const newItems = aiParsedItems.map(item => {
-      const isArea = item.job_type === 'Painting' || item.job_type === 'Tiling';
-      let subtotal = 0;
-      let sqm = item.sqm || 0;
-      
-      if (isArea) {
-        if (!sqm) {
-          const l = item.length || 0;
-          const w = item.width || 0;
-          const h = item.height || 0;
-          sqm = item.surface_type === 'Wall' ? (l * h) : (l * w);
-        }
-        subtotal = sqm * (item.rate || 0);
-      } else {
-        subtotal = (item.quantity || 1) * (item.unit_price || 0);
-      }
-
-      return {
-        id: uuidv4(),
-        job_type: item.job_type || 'General',
-        surface_type: item.surface_type,
-        description: item.description || 'Voice Item',
-        length: item.length,
-        width: item.width,
-        height: item.height,
-        sqm: sqm,
-        rate: item.rate,
-        quantity: item.quantity || 1,
-        unit_price: item.unit_price,
-        subtotal
-      } as QuoteItem;
-    });
-
-    setItems([...items, ...newItems]);
-    setAiParsedItems([]);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -489,61 +398,12 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
         {/* Step 2: Line Items */}
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-slate-50 mb-2">Line Items</h2>
                 <p className="text-slate-400 text-sm">Add services to this quote.</p>
               </div>
-              <button 
-                onClick={toggleRecording}
-                disabled={isProcessingVoice}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors shadow-sm ${
-                  isRecording 
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse' 
-                    : isProcessingVoice
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                }`}
-              >
-                {isProcessingVoice ? (
-                  <><Loader2 size={16} className="animate-spin" /> Processing...</>
-                ) : (
-                  <><Mic size={16} /> {isRecording ? 'Listening...' : 'Voice Quote'}</>
-                )}
-              </button>
             </div>
-
-            {aiParsedItems.length > 0 && (
-              <div className="bg-emerald-950/30 border border-emerald-900/50 rounded-2xl p-4 mb-6">
-                <h4 className="text-emerald-400 font-medium mb-3 flex items-center gap-2">
-                  <Check size={18} /> Review AI Results
-                </h4>
-                <div className="space-y-3 mb-4">
-                  {aiParsedItems.map((item, idx) => (
-                    <div key={idx} className="bg-slate-900/50 rounded-xl p-3 border border-slate-800">
-                      <p className="font-medium text-slate-200">{item.description}</p>
-                      <p className="text-sm text-slate-400">
-                        {item.job_type} • {item.sqm ? `${item.sqm} sqm` : `${item.quantity || 1} units`}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={acceptAiItems}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-medium transition-colors"
-                  >
-                    Add to Quote
-                  </button>
-                  <button 
-                    onClick={() => setAiParsedItems([])}
-                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-medium transition-colors"
-                  >
-                    Discard
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Added Items List */}
             {items.length > 0 && (
