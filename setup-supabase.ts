@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS expenses (
   date TIMESTAMPTZ,
   total_amount NUMERIC,
   vat_amount NUMERIC,
-  image_url TEXT
+  image_url TEXT,
+  updated_at TIMESTAMPTZ
 );
 
 -- Enable RLS
@@ -97,6 +98,9 @@ CREATE POLICY "Allow public insert to quote_items" ON quote_items FOR INSERT WIT
 
 DROP POLICY IF EXISTS "Allow public update to quote_items" ON quote_items;
 CREATE POLICY "Allow public update to quote_items" ON quote_items FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Allow public delete to quote_items" ON quote_items;
+CREATE POLICY "Allow public delete to quote_items" ON quote_items FOR DELETE USING (true);
 
 -- RLS Policies for Expenses
 DROP POLICY IF EXISTS "Allow public read access to expenses" ON expenses;

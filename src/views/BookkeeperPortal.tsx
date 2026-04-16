@@ -26,7 +26,7 @@ export function BookkeeperPortal({ token }: { token: string }) {
     
     try {
       // 1. Filter Data
-      const relevantQuotes = quotes.filter(q => q.status === 'Paid' || q.status === 'Sent');
+      const relevantQuotes = quotes.filter(q => q.status === 'Fully Paid' || q.status === 'Sent');
       
       // 2. Prepare Revenue Sheet
       const revenueData = relevantQuotes.map(q => ({
@@ -38,7 +38,7 @@ export function BookkeeperPortal({ token }: { token: string }) {
         'Total (ZAR)': q.total_amount,
         'Deposit Paid': q.deposit_amount,
         Status: q.status,
-        'Payfast Ref': q.status === 'Paid' ? `PF-${q.id.substring(0, 8).toUpperCase()}` : 'N/A'
+        'Payfast Ref': q.status === 'Fully Paid' ? `PF-${q.id.substring(0, 8).toUpperCase()}` : 'N/A'
       }));
 
       // 3. Prepare Expenses Sheet

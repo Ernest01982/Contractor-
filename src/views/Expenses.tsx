@@ -10,7 +10,7 @@ export function Expenses() {
   const [selectedQuoteId, setSelectedQuoteId] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const activeQuotes = quotes.filter(q => q.status !== 'Paid');
+  const activeQuotes = quotes.filter(q => q.status !== 'Fully Paid');
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

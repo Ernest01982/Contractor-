@@ -1,28 +1,24 @@
-// Temporary script to execute migration
-const token = 'sbp_fbda0122a684fffd68c61125d4287f3b5b9cf454';
+const token = 'sbp_36fb401ff06ac3c5ececeee31f50c7a72676964f';
 const ref = 'psyzfnepaqtzlxjdulva';
 
 const sql = `
--- ADD missing columns to the existing Quotes table
-ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES clients(id) ON DELETE SET NULL;
-ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_email TEXT;
-ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_phone TEXT;
-ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_vat_number TEXT;
+-- 1. Add missing updated_at column to expenses
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
 
--- Add missing DELETE policy for quotes to allow the new Delete Quote button to work
-DROP POLICY IF EXISTS "Allow public delete to quotes" ON quotes;
-CREATE POLICY "Allow public delete to quotes" ON quotes FOR DELETE USING (true);
+-- 2. Add missing DELETE policy for quote_items so we can remove orphan items
+DROP POLICY IF EXISTS "Allow public delete to quote_items" ON quote_items;
+CREATE POLICY "Allow public delete to quote_items" ON quote_items FOR DELETE USING (true);
 
--- Reload the Supabase PostgREST schema cache just to be safe
+-- 3. Reload the Supabase PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
 `;
 
 async function run() {
   try {
-    const response = await fetch(\`https://api.supabase.com/v1/projects/\${ref}/query\`, {
+    const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/query`, {
       method: 'POST',
       headers: {
-        'Authorization': \`Bearer \${token}\`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ query: sql })

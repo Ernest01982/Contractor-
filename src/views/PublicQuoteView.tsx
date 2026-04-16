@@ -197,7 +197,7 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           )}
 
-          {quote.status === 'Paid' && (
+          {quote.status === 'Deposit Paid' && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
               <p className="text-emerald-700 font-medium flex items-center justify-center gap-2">
                 <CheckCircle size={20} /> Deposit Paid. Thank you!

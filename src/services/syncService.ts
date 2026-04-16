@@ -57,6 +57,30 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
         console.error('Error syncing quote items:', itemsError.message, itemsError.details);
         throw itemsError;
       }
+
+      // 3. Delete any orphaned items that were removed from the quote
+      const currentItemIds = quote.items.map(item => item.id);
+      const { error: deleteError } = await supabase
+        .from('quote_items')
+        .delete()
+        .eq('quote_id', quote.id)
+        .not('id', 'in', `(${currentItemIds.join(',')})`);
+
+      if (deleteError) {
+        console.error('Error deleting orphaned quote items:', deleteError.message, deleteError.details);
+        throw deleteError;
+      }
+    } else {
+      // If quote has no items, delete all existing items for this quote
+      const { error: deleteAllError } = await supabase
+        .from('quote_items')
+        .delete()
+        .eq('quote_id', quote.id);
+      
+      if (deleteAllError) {
+         console.error('Error deleting all quote items:', deleteAllError.message, deleteAllError.details);
+         throw deleteAllError;
+      }
     }
     console.log('Quote synced successfully');
   } catch (error) {
