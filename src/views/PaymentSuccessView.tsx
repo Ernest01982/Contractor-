@@ -1,30 +1,61 @@
-import { useEffect } from 'react';
-import { CheckCircle, Phone, MessageCircle } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useEffect, useState } from 'react';
+import { CheckCircle, Phone, MessageCircle, Loader2 } from 'lucide-react';
+import { fetchQuoteById, updateQuoteStatusInSupabase } from '../services/syncService';
+import { Quote } from '../store/useStore';
 
 export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
-  const { updateQuoteStatus, profile, quotes } = useStore();
-  const quote = quotes.find(q => q.id === quoteId);
-  const isFinalInvoice = quote?.status === 'Final Invoice Sent' || quote?.status === 'Fully Paid';
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const phoneParam = searchParams.get('c');
 
   useEffect(() => {
-    // Automatically mark the quote as Paid
-    if (quoteId && quote) {
-      if (quote.status === 'Sent' || quote.status === 'Accepted') {
-        updateQuoteStatus(quoteId, 'Deposit Paid');
-      } else if (quote.status === 'Final Invoice Sent') {
-        updateQuoteStatus(quoteId, 'Fully Paid');
+    const processPayment = async () => {
+      try {
+        const fetchedQuote = await fetchQuoteById(quoteId);
+        if (fetchedQuote) {
+          setQuote(fetchedQuote);
+          // Mark the quote as Paid directly in Supabase (client lacks local store)
+          if (fetchedQuote.status === 'Sent' || fetchedQuote.status === 'Accepted') {
+            await updateQuoteStatusInSupabase(quoteId, 'Deposit Paid');
+          } else if (fetchedQuote.status === 'Final Invoice Sent') {
+            await updateQuoteStatusInSupabase(quoteId, 'Fully Paid');
+          }
+        }
+      } catch (error) {
+        console.error("Error updating quote:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [quoteId, quote?.status, updateQuoteStatus]);
+    };
 
-  const contractorPhone = profile?.phone ? profile.phone.replace(/[^0-9]/g, '') : '27821234567';
+    if (quoteId) {
+      processPayment();
+    }
+  }, [quoteId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
+  const isFinalInvoice = quote?.status === 'Final Invoice Sent' || quote?.status === 'Fully Paid';
+  const contractorPhone = phoneParam ? phoneParam.replace(/[^0-9]/g, '') : '';
+
   const whatsappMessage = encodeURIComponent(
     isFinalInvoice 
       ? `Hi, I have successfully paid the final balance for Tax Invoice #${quoteId.substring(0, 8).toUpperCase()}.`
       : `Hi, I have successfully paid the deposit for Quote #${quoteId.substring(0, 8).toUpperCase()}.`
   );
-  const whatsappUrl = `https://wa.me/${contractorPhone}?text=${whatsappMessage}`;
+
+  // If phone is missing, it will open the generic WhatsApp picker
+  const whatsappUrl = contractorPhone 
+    ? `https://wa.me/${contractorPhone}?text=${whatsappMessage}`
+    : `https://wa.me/?text=${whatsappMessage}`;
 
   useEffect(() => {
     // Automatically redirect to WhatsApp after 3 seconds
@@ -61,13 +92,15 @@ export function PaymentSuccessView({ quoteId }: { quoteId: string }) {
             Return to WhatsApp
           </a>
 
-          <a 
-            href="tel:+27821234567" 
-            className="flex items-center justify-center gap-2 w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-medium transition-colors"
-          >
-            <Phone size={18} />
-            Call Contractor
-          </a>
+          {contractorPhone && (
+            <a 
+              href={`tel:+${contractorPhone}`} 
+              className="flex items-center justify-center gap-2 w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-medium transition-colors"
+            >
+              <Phone size={18} />
+              Call Contractor
+            </a>
+          )}
         </div>
 
         <p className="text-xs text-slate-400 pt-4">

@@ -12,7 +12,7 @@ interface QuoteBuilderProps {
 }
 
 export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
-  const { quotes, addQuote, updateQuote, serviceLibrary, addServiceToLibrary, clients, addClient, updateClient } = useStore();
+  const { quotes, addQuote, updateQuote, serviceLibrary, addServiceToLibrary, clients, addClient, updateClient, profile } = useStore();
   const [step, setStep] = useState(1);
   
   // Form State
@@ -280,7 +280,8 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
       
       // Construct public link
       const baseUrl = window.location.origin;
-      const publicLink = `${baseUrl}/?quoteId=${quoteId}`;
+      const myPhone = profile?.phone ? formatPhoneForSA(profile.phone) : '';
+      const publicLink = `${baseUrl}/?quoteId=${quoteId}${myPhone ? `&c=${myPhone}` : ''}`;
       
       message += `View online and Pay Deposit here: ${publicLink}`;
 

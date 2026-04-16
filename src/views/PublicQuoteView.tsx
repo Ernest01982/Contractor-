@@ -12,6 +12,10 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
   const [updating, setUpdating] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const cParam = searchParams.get('c');
+  const returnUrl = `${window.location.origin}/?success=true&quoteId=${quoteId}${cParam ? `&c=${cParam}` : ''}`;
+
   useEffect(() => {
     if (!quote) {
       const loadQuote = async () => {
@@ -174,7 +178,7 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
               <form action="https://sandbox.payfast.co.za/eng/process" method="POST">
                 <input type="hidden" name="merchant_id" value="10004002" />
                 <input type="hidden" name="merchant_key" value="q1cd2rdny4a53" />
-                <input type="hidden" name="return_url" value={`${window.location.origin}/?success=true&quoteId=${quote.id}`} />
+                <input type="hidden" name="return_url" value={returnUrl} />
                 <input type="hidden" name="cancel_url" value={`${window.location.origin}/?quoteId=${quote.id}`} />
                 <input type="hidden" name="amount" value={amountToPay.toFixed(2)} />
                 <input type="hidden" name="item_name" value={payfastItemName} />
