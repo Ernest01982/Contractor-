@@ -15,6 +15,16 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
   const searchParams = new URLSearchParams(window.location.search);
   const cParam = searchParams.get('c');
   const returnUrl = `${window.location.origin}/?success=true&quoteId=${quoteId}${cParam ? `&c=${cParam}` : ''}`;
+  const cancelUrl = `${window.location.origin}/?failed=true&quoteId=${quoteId}${cParam ? `&c=${cParam}` : ''}`;
+
+  useEffect(() => {
+    if (searchParams.get('failed') === 'true' && quote && quote.status !== 'Payment Failed') {
+      updateQuoteStatusInSupabase(quoteId, 'Payment Failed').then(() => {
+        setQuote(prev => prev ? { ...prev, status: 'Payment Failed' } : null);
+        updateQuoteStatus(quoteId, 'Payment Failed');
+      });
+    }
+  }, [searchParams, quote, quoteId, updateQuoteStatus]);
 
   useEffect(() => {
     if (!quote) {
@@ -159,12 +169,19 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           )}
 
-          {(quote.status === 'Accepted' || isFinalInvoice) && (
+          {(quote.status === 'Accepted' || isFinalInvoice || quote.status === 'Payment Failed') && (
             <div className="space-y-4">
               {quote.status === 'Accepted' && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
                   <p className="text-emerald-700 font-medium flex items-center justify-center gap-2">
                     <CheckCircle size={20} /> You have accepted this quote.
+                  </p>
+                </div>
+              )}
+              {quote.status === 'Payment Failed' && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                  <p className="text-red-700 font-medium flex items-center justify-center gap-2">
+                    <XCircle size={20} /> Payment was unsuccessful. Please try again.
                   </p>
                 </div>
               )}
@@ -179,7 +196,7 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
                 <input type="hidden" name="merchant_id" value="10004002" />
                 <input type="hidden" name="merchant_key" value="q1cd2rdny4a53" />
                 <input type="hidden" name="return_url" value={returnUrl} />
-                <input type="hidden" name="cancel_url" value={`${window.location.origin}/?quoteId=${quote.id}`} />
+                <input type="hidden" name="cancel_url" value={cancelUrl} />
                 <input type="hidden" name="amount" value={amountToPay.toFixed(2)} />
                 <input type="hidden" name="item_name" value={payfastItemName} />
                 
