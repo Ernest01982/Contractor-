@@ -15,7 +15,7 @@ import { supabase } from './lib/supabase';
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
-  const { setOfflineStatus, isAuthenticated, setAuthenticated, syncFromSupabase } = useStore();
+  const { setOfflineStatus, isAuthenticated, setAuthenticated, syncFromSupabase, clearDataOnLogout } = useStore();
 
   // Simple routing based on URL params
   const searchParams = new URLSearchParams(window.location.search);
@@ -30,11 +30,13 @@ export default function App() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthenticated(!!session);
       if (session) {
         setAuthMode(null); // close auth view on success
         if (navigator.onLine) syncFromSupabase();
+      } else if (event === 'SIGNED_OUT') {
+        clearDataOnLogout();
       }
     });
 
