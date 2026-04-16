@@ -7,6 +7,40 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
   const { quotes, expenses, pendingSyncs, isOffline, lastSyncError } = useStore();
   const [showBuilder, setShowBuilder] = useState(false);
 
+  const generateMonthlyReport = () => {
+    import('jspdf').then(({ default: jsPDF }) => {
+      const doc = new jsPDF();
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+
+      const monthlyQuotes = quotes.filter(q => {
+        const d = new Date(q.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
+      const monthlyExpenses = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
+
+      const totalRevenue = monthlyQuotes.reduce((sum, q) => sum + (q.status === 'Fully Paid' || q.status === 'Deposit Paid' || q.status === 'Final Invoice Sent' ? q.total_amount : 0), 0);
+      const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + e.total_amount, 0);
+
+      doc.setFontSize(20);
+      doc.text('Monthly Financial Report', 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Month: ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`, 20, 30);
+      
+      doc.text(`Total Revenue (Paid/Deposits): ZAR ${totalRevenue.toFixed(2)}`, 20, 50);
+      doc.text(`Total Expenses: ZAR ${totalExpenses.toFixed(2)}`, 20, 60);
+      doc.text(`Net Profit: ZAR ${(totalRevenue - totalExpenses).toFixed(2)}`, 20, 70);
+
+      doc.text(`Total Quotes Issued: ${monthlyQuotes.length}`, 20, 90);
+      doc.text(`Total Expenses Logged: ${monthlyExpenses.length}`, 20, 100);
+
+      doc.save(`Monthly_Report_${new Date().toLocaleString('default', { month: 'short' })}_${currentYear}.pdf`);
+    });
+  };
+
   const pendingDeposits = quotes
     .filter(q => q.status === 'Sent' || q.status === 'Accepted')
     .reduce((sum, q) => sum + q.deposit_amount, 0);
@@ -102,6 +136,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
             Snap Receipt
           </button>
           <button 
+            onClick={generateMonthlyReport}
             className="flex flex-col items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 p-4 rounded-2xl font-medium transition-colors min-h-[88px] border border-slate-700"
           >
             <BarChart3 size={28} className="text-slate-400" />
