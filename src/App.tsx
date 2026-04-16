@@ -10,12 +10,13 @@ import { PaymentSuccessView } from './views/PaymentSuccessView';
 import { BookkeeperPortal } from './views/BookkeeperPortal';
 import { LandingPage } from './views/LandingPage';
 import { AuthView } from './views/AuthView';
+import { OnboardingView } from './views/OnboardingView';
 import { supabase } from './lib/supabase';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
-  const { setOfflineStatus, isAuthenticated, setAuthenticated, syncFromSupabase, clearDataOnLogout } = useStore();
+  const { setOfflineStatus, isAuthenticated, setAuthenticated, syncFromSupabase, clearDataOnLogout, profile, isSyncing } = useStore();
 
   // Simple routing based on URL params
   const searchParams = new URLSearchParams(window.location.search);
@@ -82,6 +83,22 @@ export default function App() {
       return <AuthView mode={authMode} onBack={() => setAuthMode(null)} />;
     }
     return <LandingPage onLogin={() => setAuthMode('login')} onSignUp={() => setAuthMode('signup')} />;
+  }
+
+  // Prevent flashing onboarding while initial data loads
+  if (isSyncing && !profile) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  // Check if user needs onboarding
+  const isProfileComplete = profile?.company_name && profile?.contractor_name && profile?.phone && profile?.address && profile?.services?.length > 0;
+  
+  if (!isProfileComplete) {
+    return <OnboardingView onComplete={() => window.scrollTo(0, 0)} />;
   }
 
   const renderTab = () => {
