@@ -20,6 +20,7 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientVat, setClientVat] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
   const [saveClient, setSaveClient] = useState(true);
 
   const [items, setItems] = useState<QuoteItem[]>([]);
@@ -35,6 +36,7 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
         setClientPhone(q.client_phone);
         setClientEmail(q.client_email || '');
         setClientVat(q.client_vat_number || '');
+        setClientAddress(q.client_address || '');
         if (q.client_id) setSelectedClientId(q.client_id);
         
         setItems(q.items);
@@ -219,14 +221,16 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
             name: clientName,
             phone: clientPhone,
             email: clientEmail,
-            vat_number: clientVat
+            vat_number: clientVat,
+            address: clientAddress
           });
         } else {
           activeClientId = addClient({
             name: clientName,
             phone: clientPhone,
             email: clientEmail,
-            vat_number: clientVat
+            vat_number: clientVat,
+            address: clientAddress
           });
         }
       }
@@ -238,6 +242,7 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
         client_phone: clientPhone,
         client_email: clientEmail,
         client_vat_number: clientVat,
+        client_address: clientAddress,
         items,
         subtotal: quoteSubtotal,
         has_vat: hasVat,
@@ -319,12 +324,14 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
                           setClientPhone(c.phone);
                           setClientEmail(c.email || '');
                           setClientVat(c.vat_number || '');
+                          setClientAddress(c.address || '');
                         }
                       } else {
                         setClientName('');
                         setClientPhone('');
                         setClientEmail('');
                         setClientVat('');
+                        setClientAddress('');
                       }
                     }}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-50 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
@@ -379,6 +386,16 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
                     placeholder="Optional"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Client Address</label>
+                <input 
+                  type="text" 
+                  value={clientAddress}
+                  onChange={e => setClientAddress(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-50 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  placeholder="e.g. 123 Main St, Suburb, City"
+                />
               </div>
               <div className="pt-2">
                 <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
@@ -631,6 +648,7 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
                 <div className="text-right">
                   <p className="text-sm font-medium uppercase tracking-wider mb-1" style={{ color: '#64748b' }}>Billed To</p>
                   <p className="font-bold text-lg" style={{ color: '#0f172a' }}>{clientName}</p>
+                  {clientAddress && <p className="text-sm mt-1" style={{ color: '#475569', maxWidth: '200px', marginLeft: 'auto' }}>{clientAddress}</p>}
                 </div>
               </div>
 

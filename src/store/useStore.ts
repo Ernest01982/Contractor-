@@ -29,6 +29,7 @@ export interface Quote {
   client_email?: string;
   client_phone: string;
   client_vat_number?: string;
+  client_address?: string;
   items: QuoteItem[];
   subtotal: number;
   has_vat: boolean;
@@ -67,6 +68,7 @@ export interface Client {
   email: string;
   phone: string;
   vat_number: string;
+  address?: string;
   updated_at: string;
 }
 
