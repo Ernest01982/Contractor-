@@ -114,6 +114,7 @@ interface AppState {
   revokeBookkeeperToken: () => void;
   updateBookkeeperAccess: (date: string) => void;
   syncFromSupabase: () => Promise<void>;
+  clearDataOnLogout: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -237,8 +238,17 @@ export const useStore = create<AppState>()(
       updateBookkeeperAccess: (date) => set({
         bookkeeperLastAccessed: date
       }),
+      clearDataOnLogout: () => set({
+        quotes: [],
+        expenses: [],
+        clients: [],
+        pendingSyncs: [],
+        profile: null,
+        isAuthenticated: false,
+        lastSyncError: null
+      }),
       syncFromSupabase: async () => {
-        if (!navigator.onLine || get().isSyncing) return;
+        if (!navigator.onLine || get().isSyncing || !get().isAuthenticated) return;
         
         set({ isSyncing: true });
         
@@ -298,6 +308,28 @@ export const useStore = create<AppState>()(
                 console.error(`Failed to sync ${item.type} ${item.id}:`, msg);
                 failedIds.add(item.id);
                 errors.push(`${item.type} sync failed: ${msg}`);
+
+                // Auto-recover from foreign key constraint errors
+                if (item.type === 'quote' && msg.includes('quotes_client_id_fkey')) {
+                  const quote = state.quotes.find(q => q.id === item.id);
+                  if (quote && quote.client_id) {
+                    const clientExistsLocally = state.clients.some(c => c.id === quote.client_id);
+                    if (clientExistsLocally) {
+                      set((currentState) => {
+                        if (!currentState.pendingSyncs.some(p => p.type === 'client' && p.id === quote.client_id)) {
+                          console.log('Auto-queuing missing client for sync:', quote.client_id);
+                          return { pendingSyncs: [...currentState.pendingSyncs, { type: 'client', id: quote.client_id! }] };
+                        }
+                        return {};
+                      });
+                    } else {
+                      console.warn('Client entirely missing locally. Stripping client_id from quote to allow sync.');
+                      set((currentState) => ({
+                        quotes: currentState.quotes.map(q => q.id === quote.id ? { ...q, client_id: undefined } : q)
+                      }));
+                    }
+                  }
+                }
               }
             }
             
