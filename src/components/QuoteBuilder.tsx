@@ -285,31 +285,23 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
       
       message += `View online and Pay Deposit here: ${publicLink}`;
 
-      // 3. Share or Fallback
-      if (navigator.canShare && navigator.canShare({ files: pdfFile ? [pdfFile] : [] })) {
-        await navigator.share({
-          files: pdfFile ? [pdfFile] : undefined,
-          title: `Quote from ${companyName}`,
-          text: message,
-        });
-      } else {
-        // Fallback: Download PDF and open WhatsApp link
-        if (pdfFile) {
-          const url = URL.createObjectURL(pdfFile);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = pdfFile.name;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-
-        const encodedMessage = encodeURIComponent(message);
-        const formattedPhone = formatPhoneForSA(clientPhone);
-        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
+      // 3. Download PDF and open direct WhatsApp link
+      // We bypass navigator.share because WhatsApp mobile drops text when a file is attached
+      if (pdfFile) {
+        const url = URL.createObjectURL(pdfFile);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = pdfFile.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
+
+      const encodedMessage = encodeURIComponent(message);
+      const formattedPhone = formatPhoneForSA(clientPhone);
+      const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
 
       let activeClientId = selectedClientId;
       if (saveClient) {
