@@ -29,7 +29,7 @@ export function AuthView({ mode: initialMode, onBack }: AuthViewProps) {
           password,
         });
         if (error) throw error;
-        setMessage('Account created successfully! You can now log in.');
+        setMessage('Account created successfully! Please check your email and click the confirmation link before logging in.');
         setMode('login');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
