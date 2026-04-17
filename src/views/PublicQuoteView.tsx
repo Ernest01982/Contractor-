@@ -117,9 +117,13 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
       doc.setFontSize(10);
       doc.text(profile?.company_name || 'Contractor', 20, 56);
       doc.setTextColor(100, 116, 139);
-      if (profile?.phone) doc.text(profile.phone, 20, 61);
-      if (profile?.email) doc.text(profile.email, 20, 66);
-      if (profile?.vat_number) doc.text(`VAT: ${profile.vat_number}`, 20, 71);
+      
+      let fromY = 61;
+      if (profile?.contractor_name) { doc.text(profile.contractor_name, 20, fromY); fromY += 5; }
+      if (profile?.phone) { doc.text(profile.phone, 20, fromY); fromY += 5; }
+      if (profile?.email) { doc.text(profile.email, 20, fromY); fromY += 5; }
+      if (profile?.address) { doc.text(profile.address, 20, fromY); fromY += 5; }
+      if (profile?.vat_number) { doc.text(`VAT: ${profile.vat_number}`, 20, fromY); }
 
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
