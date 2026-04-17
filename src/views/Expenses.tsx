@@ -70,7 +70,13 @@ export function Expenses() {
           <span className="font-semibold text-sm">Snap Receipt</span>
         </button>
         
-        <button className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-colors border border-slate-700">
+        <button 
+          onClick={() => {
+            setAiResult({ store_name: '', total_amount: '', date: new Date().toISOString().split('T')[0] });
+            setSelectedQuoteId('');
+          }}
+          className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-colors border border-slate-700"
+        >
           <Plus size={28} />
           <span className="font-semibold text-sm">Manual Entry</span>
         </button>
@@ -81,7 +87,6 @@ export function Expenses() {
         ref={fileInputRef} 
         onChange={handleFileChange} 
         accept="image/*" 
-        capture="environment" 
         className="hidden" 
       />
 
@@ -89,7 +94,11 @@ export function Expenses() {
       {aiResult && (
         <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-5 mb-8 animate-in slide-in-from-bottom-4">
           <h3 className="text-emerald-400 font-semibold mb-4 flex items-center gap-2">
-            <Check size={18} /> Review Extracted Data
+            {aiResult.image_url ? (
+              <><Check size={18} /> Review Extracted Data</>
+            ) : (
+              <><Plus size={18} /> Enter Expense Details</>
+            )}
           </h3>
           
           <div className="space-y-4 mb-6">
@@ -107,8 +116,8 @@ export function Expenses() {
                 <label className="block text-xs font-medium text-slate-400 mb-1">Total Amount</label>
                 <input 
                   type="number" 
-                  value={aiResult.total_amount || ''} 
-                  onChange={e => setAiResult({...aiResult, total_amount: parseFloat(e.target.value)})}
+                  value={aiResult.total_amount === '' ? '' : (aiResult.total_amount || '')} 
+                  onChange={e => setAiResult({...aiResult, total_amount: e.target.value === '' ? '' : parseFloat(e.target.value)})}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200"
                 />
               </div>
