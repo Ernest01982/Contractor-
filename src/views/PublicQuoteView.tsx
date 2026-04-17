@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore, Quote } from '../store/useStore';
 import { Download, CheckCircle, XCircle, Check, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { supabase } from '../lib/supabase';
 import { fetchQuoteById, updateQuoteStatusInSupabase } from '../services/syncService';
 
 export function PublicQuoteView({ quoteId }: { quoteId: string }) {
@@ -11,6 +11,7 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
   const [loading, setLoading] = useState(!quote);
   const [updating, setUpdating] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const searchParams = new URLSearchParams(window.location.search);
   const cParam = searchParams.get('c');
@@ -84,21 +85,83 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
   };
 
   const handleDownloadPDF = async () => {
-    if (!invoiceRef.current) return;
-    
+    if (!quote) return;
+    setDownloadingPdf(true);
     try {
-      const canvas = await html2canvas(invoiceRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
-      });
+      const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', quote.user_id).single();
+      const doc = new jsPDF();
+      const isFinal = quote.status === 'Final Invoice Sent' || quote.status === 'Fully Paid';
+      const docTitle = isFinal ? 'TAX INVOICE' : 'QUOTE';
       
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(`Quote_${quote.client_name.replace(/\s+/g, '_')}.pdf`);
-    } catch (error) {
-      console.error('Failed to generate PDF', error);
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(docTitle, 20, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`${docTitle} #: ${quote.id.substring(0, 8).toUpperCase()}`, 20, 30);
+      doc.text(`Date: ${new Date(quote.date).toLocaleDateString()}`, 20, 35);
+      
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('FROM:', 20, 50);
+      doc.setFontSize(10);
+      doc.text(profile?.company_name || 'Contractor', 20, 56);
+      doc.setTextColor(100, 116, 139);
+      if (profile?.phone) doc.text(profile.phone, 20, 61);
+      if (profile?.email) doc.text(profile.email, 20, 66);
+      if (profile?.vat_number) doc.text(`VAT: ${profile.vat_number}`, 20, 71);
+
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('TO:', 120, 50);
+      doc.setFontSize(10);
+      doc.text(quote.client_name || 'Client', 120, 56);
+      doc.setTextColor(100, 116, 139);
+      if (quote.client_phone) doc.text(quote.client_phone, 120, 61);
+      if (quote.client_email) doc.text(quote.client_email, 120, 66);
+      if (quote.client_address) doc.text(quote.client_address, 120, 71);
+
+      let startY = 85;
+      doc.setFillColor(248, 250, 252);
+      doc.rect(20, startY - 5, 170, 10, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text('Description', 22, startY + 1);
+      doc.text('Total', 170, startY + 1);
+      doc.setFont(undefined, 'normal');
+
+      startY += 12;
+      quote.items.forEach((item: any) => {
+        doc.text(item.description || item.job_type, 22, startY);
+        doc.text(`R ${item.subtotal.toFixed(2)}`, 170, startY);
+        startY += 8;
+      });
+
+      startY += 10;
+      doc.setDrawColor(226, 232, 240);
+      doc.line(120, startY - 5, 190, startY - 5);
+      doc.text('Subtotal:', 130, startY);
+      doc.text(`R ${quote.subtotal.toFixed(2)}`, 170, startY);
+      
+      if (quote.has_vat) {
+        startY += 8;
+        doc.text('VAT (15%):', 130, startY);
+        doc.text(`R ${quote.vat_amount?.toFixed(2)}`, 170, startY);
+      }
+
+      startY += 8;
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total:', 130, startY);
+      doc.text(`R ${quote.total_amount.toFixed(2)}`, 170, startY);
+
+      doc.save(`${docTitle}_${quote.id.substring(0,8)}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate PDF.');
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -142,10 +205,11 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
         <div className="flex flex-col gap-4">
           <button 
             onClick={handleDownloadPDF}
-            className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
+            disabled={downloadingPdf}
+            className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
           >
-            <Download size={20} />
-            Download PDF
+            {downloadingPdf ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
+            {downloadingPdf ? 'Generating PDF...' : 'Download PDF'}
           </button>
 
           {quote.status === 'Sent' && (
