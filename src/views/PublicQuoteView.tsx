@@ -12,6 +12,7 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
   const [updating, setUpdating] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [contractorProfile, setContractorProfile] = useState<any>(null);
 
   const searchParams = new URLSearchParams(window.location.search);
   const cParam = searchParams.get('c');
@@ -48,6 +49,15 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
       loadQuote();
     }
   }, [quoteId, quote]);
+
+  useEffect(() => {
+    if (quote && !contractorProfile) {
+      supabase.from('profiles').select('*').eq('user_id', quote.user_id).single()
+        .then(({ data }) => {
+          if (data) setContractorProfile(data);
+        });
+    }
+  }, [quote, contractorProfile]);
 
   if (loading) {
     return (
@@ -296,11 +306,23 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
           {/* Header */}
           <div className="flex justify-between items-start mb-10 border-b border-slate-200 pb-8">
             <div>
-              <div className="w-16 h-16 bg-slate-900 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-white font-bold text-xl">CP</span>
+              {contractorProfile?.logo_url ? (
+                <img src={contractorProfile.logo_url} alt="Logo" className="w-16 h-16 object-contain mb-4 rounded-lg" />
+              ) : (
+                <div className="w-16 h-16 bg-slate-900 rounded-xl flex items-center justify-center mb-4">
+                  <span className="text-white font-bold text-xl">
+                    {contractorProfile?.company_name ? contractorProfile.company_name.substring(0,2).toUpperCase() : 'CP'}
+                  </span>
+                </div>
+              )}
+              <h1 className="text-2xl font-bold text-slate-900">{contractorProfile?.company_name || 'Contractor Pro'}</h1>
+              <div className="text-slate-500 text-sm mt-1">
+                {contractorProfile?.contractor_name && <p>{contractorProfile.contractor_name}</p>}
+                {contractorProfile?.phone && <p>{contractorProfile.phone}</p>}
+                {contractorProfile?.email && <p>{contractorProfile.email}</p>}
+                {contractorProfile?.address && <p>{contractorProfile.address}</p>}
+                {contractorProfile?.vat_number && <p className="mt-1">VAT: {contractorProfile.vat_number}</p>}
               </div>
-              <h1 className="text-2xl font-bold text-slate-900">Contractor Pro</h1>
-              <p className="text-slate-500 text-sm mt-1">123 Builder Street<br/>Cape Town, 8001<br/>contact@contractorpro.co.za</p>
             </div>
             <div className="text-right">
               <h2 className="text-3xl font-bold text-slate-200 uppercase tracking-tight mb-2">

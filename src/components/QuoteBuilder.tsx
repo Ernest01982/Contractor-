@@ -642,10 +642,21 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
             >
               <div className="flex justify-between items-start mb-8 pb-6" style={{ borderBottom: '1px solid #e2e8f0' }}>
                 <div>
-                  <h1 className="text-2xl font-bold uppercase tracking-tight" style={{ color: '#0f172a' }}>QUOTE</h1>
-                  <p className="mt-1" style={{ color: '#64748b' }}>Date: {new Date().toLocaleDateString()}</p>
+                  {profile?.logo_url ? (
+                    <img src={profile.logo_url} alt="Logo" className="w-16 h-16 object-contain mb-4 rounded-lg" />
+                  ) : null}
+                  <h1 className="text-3xl font-bold text-slate-900 mb-1">{profile?.company_name || 'Contractor Pro'}</h1>
+                  <div className="text-sm" style={{ color: '#64748b' }}>
+                    {profile?.contractor_name && <p>{profile.contractor_name}</p>}
+                    {profile?.phone && <p>{profile.phone}</p>}
+                    {profile?.email && <p>{profile.email}</p>}
+                    {profile?.address && <p>{profile.address}</p>}
+                    {profile?.vat_number && <p className="mt-1">VAT: {profile.vat_number}</p>}
+                  </div>
                 </div>
                 <div className="text-right">
+                  <h2 className="text-3xl font-bold uppercase tracking-tight mb-2" style={{ color: '#0f172a' }}>QUOTE</h2>
+                  <p className="text-sm mb-4" style={{ color: '#64748b' }}>Date: {new Date().toLocaleDateString()}</p>
                   <p className="text-sm font-medium uppercase tracking-wider mb-1" style={{ color: '#64748b' }}>Billed To</p>
                   <p className="font-bold text-lg" style={{ color: '#0f172a' }}>{clientName}</p>
                   {clientAddress && <p className="text-sm mt-1" style={{ color: '#475569', maxWidth: '200px', marginLeft: 'auto' }}>{clientAddress}</p>}
