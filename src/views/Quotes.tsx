@@ -80,7 +80,11 @@ export function Quotes() {
     const quote = quotes.find(q => q.id === quoteId);
     if (!quote) return;
     
-    updateQuoteStatus(quoteId, newStatus);
+    const updates: any = { status: newStatus };
+    if (newStatus === 'In Progress') updates.actual_start_date = new Date().toISOString();
+    if (newStatus === 'Finished') updates.actual_finish_date = new Date().toISOString();
+    
+    updateQuote(quoteId, updates);
     
     let phone = quote.client_phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '27' + phone.substring(1);
@@ -174,9 +178,14 @@ export function Quotes() {
                       </button>
                     )}
                     {quote.status === 'Scheduled' && (
-                      <button onClick={() => notifyClientStatusChange(quote.id, 'In Progress')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
-                        Start Work
-                      </button>
+                      <>
+                        <button onClick={() => notifyClientStatusChange(quote.id, 'In Progress')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                          Start Work
+                        </button>
+                        <button onClick={() => setSchedulingQuoteId(quote.id)} className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                          Reschedule
+                        </button>
+                      </>
                     )}
                     {quote.status === 'In Progress' && (
                       <button onClick={() => notifyClientStatusChange(quote.id, 'Finished')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
