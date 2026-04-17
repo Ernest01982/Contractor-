@@ -76,6 +76,25 @@ export function Quotes() {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  const notifyClientStatusChange = (quoteId: string, newStatus: 'In Progress' | 'Finished') => {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) return;
+    
+    updateQuoteStatus(quoteId, newStatus);
+    
+    let phone = quote.client_phone.replace(/\D/g, '');
+    if (phone.startsWith('0')) phone = '27' + phone.substring(1);
+    
+    let message = '';
+    if (newStatus === 'In Progress') {
+      message = `Hi ${quote.client_name}, we are on-site and have officially started work on your project (Ref: #${quote.id.substring(0,8).toUpperCase()}).`;
+    } else if (newStatus === 'Finished') {
+      message = `Hi ${quote.client_name}, we have successfully finished the work for your project (Ref: #${quote.id.substring(0,8).toUpperCase()})!`;
+    }
+    
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -155,12 +174,12 @@ export function Quotes() {
                       </button>
                     )}
                     {quote.status === 'Scheduled' && (
-                      <button onClick={() => updateQuoteStatus(quote.id, 'In Progress')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                      <button onClick={() => notifyClientStatusChange(quote.id, 'In Progress')} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
                         Start Work
                       </button>
                     )}
                     {quote.status === 'In Progress' && (
-                      <button onClick={() => updateQuoteStatus(quote.id, 'Finished')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                      <button onClick={() => notifyClientStatusChange(quote.id, 'Finished')} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
                         Finish Work
                       </button>
                     )}
