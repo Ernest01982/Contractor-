@@ -25,7 +25,7 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
 
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [hasVat, setHasVat] = useState(false);
-  const [depositPercentage, setDepositPercentage] = useState(50);
+  const [depositPercentage, setDepositPercentage] = useState(profile?.default_deposit_pct ?? 50);
 
   // Initialize if editing
   useEffect(() => {
