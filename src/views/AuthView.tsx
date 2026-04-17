@@ -121,7 +121,7 @@ export function AuthView({ mode: initialMode, onBack }: AuthViewProps) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm transition-shadow"
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm transition-shadow text-black"
                   placeholder="contractor@example.com"
                 />
               </div>
@@ -146,7 +146,7 @@ export function AuthView({ mode: initialMode, onBack }: AuthViewProps) {
                     required={mode !== 'forgot_password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none block w-full pl-10 pr-12 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm transition-shadow text-slate-900"
+                    className="appearance-none block w-full pl-10 pr-12 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent sm:text-sm transition-shadow text-black"
                     placeholder="••••••••"
                     minLength={6}
                   />

@@ -95,28 +95,28 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Company Name *</label>
-                  <input type="text" required value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Acme Construction" />
+                  <input type="text" required value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Acme Construction" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Your Name *</label>
-                  <input type="text" required value={contractorName} onChange={e => setContractorName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="John Doe" />
+                  <input type="text" required value={contractorName} onChange={e => setContractorName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="John Doe" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Phone Number *</label>
-                  <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="082 123 4567" />
+                  <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="082 123 4567" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Email Address *</label>
-                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="john@acme.com" />
+                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="john@acme.com" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Business Address *</label>
-                <input type="text" required value={address} onChange={e => setAddress(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="123 Main St, City, 1000" />
+                <input type="text" required value={address} onChange={e => setAddress(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="123 Main St, City, 1000" />
               </div>
             </div>
 
@@ -148,7 +148,7 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
                 
                 {isVatRegistered && (
                   <div className="animate-in fade-in slide-in-from-top-2">
-                    <input type="text" value={vatNumber} onChange={e => setVatNumber(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-2" placeholder="Enter VAT Number" />
+                    <input type="text" value={vatNumber} onChange={e => setVatNumber(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-2" placeholder="Enter VAT Number" />
                   </div>
                 )}
               </div>

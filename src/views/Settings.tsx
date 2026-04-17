@@ -157,11 +157,11 @@ export function Settings() {
           <section className="space-y-4">
             <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">Business Details</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label><input type="text" required value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" /></div>
-              <div><label className="block text-sm font-medium text-slate-700 mb-1">Contractor Name *</label><input type="text" required value={contractorName} onChange={e => setContractorName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" /></div>
-              <div><label className="block text-sm font-medium text-slate-700 mb-1">Phone Number *</label><input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" /></div>
-              <div><label className="block text-sm font-medium text-slate-700 mb-1">Email Address *</label><input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" /></div>
-              <div className="sm:col-span-2"><label className="block text-sm font-medium text-slate-700 mb-1">Business Address *</label><input type="text" required value={address} onChange={e => setAddress(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" /></div>
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label><input type="text" required value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:border-emerald-500" /></div>
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">Contractor Name *</label><input type="text" required value={contractorName} onChange={e => setContractorName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:border-emerald-500" /></div>
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">Phone Number *</label><input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:border-emerald-500" /></div>
+              <div><label className="block text-sm font-medium text-slate-700 mb-1">Email Address *</label><input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:border-emerald-500" /></div>
+              <div className="sm:col-span-2"><label className="block text-sm font-medium text-slate-700 mb-1">Business Address *</label><input type="text" required value={address} onChange={e => setAddress(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:border-emerald-500" /></div>
             </div>
           </section>
 
@@ -177,7 +177,7 @@ export function Settings() {
             </div>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
               <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={isVatRegistered} onChange={e => setIsVatRegistered(e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600" /><span className="font-medium text-slate-700">VAT Registered</span></label>
-              {isVatRegistered && <div className="animate-in fade-in slide-in-from-top-2"><input type="text" value={vatNumber} onChange={e => setVatNumber(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" placeholder="VAT Number" /></div>}
+              {isVatRegistered && <div className="animate-in fade-in slide-in-from-top-2"><input type="text" value={vatNumber} onChange={e => setVatNumber(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-3 text-black focus:outline-none focus:border-emerald-500" placeholder="VAT Number" /></div>}
             </div>
           </section>
 
