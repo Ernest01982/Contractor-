@@ -39,6 +39,9 @@ export interface Quote {
   deposit_amount: number;
   status: QuoteStatus;
   scheduled_date?: string;
+  actual_start_date?: string;
+  actual_finish_date?: string;
+  final_payment_date?: string;
   date: string;
   updated_at: string;
 }
