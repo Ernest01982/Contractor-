@@ -3,7 +3,6 @@ import { useStore, JobType, QuoteItem, SurfaceType } from '../store/useStore';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Check, Save, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface QuoteBuilderProps {
   onClose: () => void;
@@ -168,20 +167,80 @@ export function QuoteBuilder({ onClose, editingQuoteId }: QuoteBuilderProps) {
     
     try {
       // 1. Generate PDF
-      let pdfFile: File | null = null;
-      if (invoiceRef.current) {
-        const canvas = await html2canvas(invoiceRef.current, { scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'px',
-          format: [canvas.width, canvas.height]
-        });
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-        const pdfBlob = pdf.output('blob');
-        pdfFile = new File([pdfBlob], `Quote_${clientName.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+      const doc = new jsPDF();
+      const docTitle = 'QUOTE';
+      
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(docTitle, 20, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`${docTitle} #: ${quoteId.substring(0, 8).toUpperCase()}`, 20, 30);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 35);
+      
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('FROM:', 20, 50);
+      doc.setFontSize(10);
+      doc.text(profile?.company_name || 'Contractor', 20, 56);
+      doc.setTextColor(100, 116, 139);
+      
+      let fromY = 61;
+      if (profile?.contractor_name) { doc.text(profile.contractor_name, 20, fromY); fromY += 5; }
+      if (profile?.phone) { doc.text(profile.phone, 20, fromY); fromY += 5; }
+      if (profile?.email) { doc.text(profile.email, 20, fromY); fromY += 5; }
+      if (profile?.address) { doc.text(profile.address, 20, fromY); fromY += 5; }
+      if (profile?.vat_number) { doc.text(`VAT: ${profile.vat_number}`, 20, fromY); }
+
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('TO:', 120, 50);
+      doc.setFontSize(10);
+      doc.text(clientName || 'Client', 120, 56);
+      doc.setTextColor(100, 116, 139);
+      
+      let toY = 61;
+      if (clientPhone) { doc.text(clientPhone, 120, toY); toY += 5; }
+      if (clientEmail) { doc.text(clientEmail, 120, toY); toY += 5; }
+      if (clientAddress) { doc.text(clientAddress, 120, toY); toY += 5; }
+
+      let startY = 85;
+      doc.setFillColor(248, 250, 252);
+      doc.rect(20, startY - 5, 170, 10, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text('Description', 22, startY + 1);
+      doc.text('Total', 170, startY + 1);
+      doc.setFont(undefined, 'normal');
+
+      startY += 12;
+      items.forEach((item: any) => {
+        doc.text(item.description || item.job_type, 22, startY);
+        doc.text(`R ${item.subtotal.toFixed(2)}`, 170, startY);
+        startY += 8;
+      });
+
+      startY += 10;
+      doc.setDrawColor(226, 232, 240);
+      doc.line(120, startY - 5, 190, startY - 5);
+      doc.text('Subtotal:', 130, startY);
+      doc.text(`R ${quoteSubtotal.toFixed(2)}`, 170, startY);
+      
+      if (hasVat) {
+        startY += 8;
+        doc.text('VAT (15%):', 130, startY);
+        doc.text(`R ${vatAmount.toFixed(2)}`, 170, startY);
       }
+
+      startY += 8;
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total:', 130, startY);
+      doc.text(`R ${totalAmount.toFixed(2)}`, 170, startY);
+
+      const pdfBlob = doc.output('blob');
+      const pdfFile = new File([pdfBlob], `Quote_${clientName.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
 
       // 2. Format WhatsApp Message
       const companyName = "Contractor Pro";
