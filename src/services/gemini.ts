@@ -54,7 +54,7 @@ export async function parseReceiptImage(base64Image: string, mimeType: string) {
             }
           },
           {
-            text: "Extract the following data from this receipt: Store Name, Date, Total Amount, and VAT Amount. Return as JSON."
+            text: "You are an expert accountant. Extract the following from this receipt image and return ONLY a valid JSON object:\n- store_name: Name of the business.\n- date: YYYY-MM-DD.\n- total_amount: The final total as a number.\n- vat_amount: The tax/VAT amount as a number (if visible, else 0).\n- category: Choose the MOST ACCURATE category from this exact list: ['Materials', 'Fuel', 'Tools', 'Subcontractors', 'Stationery', 'Meals', 'Vehicle', 'Other']."
           }
         ]
       },
@@ -66,7 +66,8 @@ export async function parseReceiptImage(base64Image: string, mimeType: string) {
             store_name: { type: Type.STRING },
             date: { type: Type.STRING, description: "YYYY-MM-DD format" },
             total_amount: { type: Type.NUMBER },
-            vat_amount: { type: Type.NUMBER }
+            vat_amount: { type: Type.NUMBER },
+            category: { type: Type.STRING }
           }
         }
       }

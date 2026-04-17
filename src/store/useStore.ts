@@ -58,6 +58,7 @@ export interface Expense {
   id: string;
   quote_id: string | null;
   store_name: string;
+  category: string;
   date: string;
   total_amount: number;
   vat_amount: number;

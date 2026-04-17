@@ -38,6 +38,7 @@ export function Expenses() {
     addExpense({
       quote_id: selectedQuoteId || null,
       store_name: aiResult.store_name || 'Unknown Store',
+      category: aiResult.category || 'Materials',
       date: aiResult.date || new Date().toISOString().split('T')[0],
       total_amount: aiResult.total_amount || 0,
       vat_amount: aiResult.vat_amount || 0,
@@ -72,7 +73,7 @@ export function Expenses() {
         
         <button 
           onClick={() => {
-            setAiResult({ store_name: '', total_amount: '', date: new Date().toISOString().split('T')[0] });
+            setAiResult({ store_name: '', category: 'Materials', total_amount: '', vat_amount: '', date: new Date().toISOString().split('T')[0] });
             setSelectedQuoteId('');
           }}
           className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-colors border border-slate-700"
@@ -111,13 +112,39 @@ export function Expenses() {
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Expense Category</label>
+              <select 
+                value={aiResult.category || 'Materials'} 
+                onChange={e => setAiResult({...aiResult, category: e.target.value})}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200"
+              >
+                <option value="Materials">Materials & Supplies</option>
+                <option value="Fuel">Fuel & Travel</option>
+                <option value="Tools">Tools & Equipment</option>
+                <option value="Subcontractors">Subcontractors</option>
+                <option value="Stationery">Stationery & Office</option>
+                <option value="Meals">Meals & Entertainment</option>
+                <option value="Vehicle">Vehicle Maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Total Amount</label>
                 <input 
                   type="number" 
                   value={aiResult.total_amount === '' ? '' : (aiResult.total_amount || '')} 
                   onChange={e => setAiResult({...aiResult, total_amount: e.target.value === '' ? '' : parseFloat(e.target.value)})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">VAT Included</label>
+                <input 
+                  type="number" 
+                  value={aiResult.vat_amount === '' ? '' : (aiResult.vat_amount || '')} 
+                  onChange={e => setAiResult({...aiResult, vat_amount: e.target.value === '' ? '' : parseFloat(e.target.value)})}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200"
                 />
               </div>
@@ -176,7 +203,7 @@ export function Expenses() {
           expenses.map(expense => (
             <div key={expense.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden">
+                <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                   {expense.image_url ? (
                     <img src={expense.image_url} alt="Receipt" className="w-full h-full object-cover opacity-80" />
                   ) : (
@@ -184,8 +211,12 @@ export function Expenses() {
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-200">{expense.store_name}</p>
-                  <p className="text-sm text-slate-400">{expense.date}</p>
+                  <p className="font-semibold text-slate-200 line-clamp-1">{expense.store_name}</p>
+                  <p className="text-sm text-slate-400 flex items-center gap-2">
+                    <span>{expense.date}</span>
+                    <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
+                    <span className="text-emerald-400 font-medium">{expense.category || 'Materials'}</span>
+                  </p>
                 </div>
               </div>
               <div className="text-right">
