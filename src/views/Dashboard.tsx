@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2, Shield, Wallet, Banknote } from 'lucide-react';
+import { Plus, Camera, BarChart3, Clock, CheckCircle2, TrendingUp, CloudOff, Cloud, Loader2, Shield, Wallet, Banknote, CalendarDays } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { QuoteBuilder } from '../components/QuoteBuilder';
 
@@ -52,6 +52,8 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
     .reduce((sum, q) => sum + (q.total_amount - q.deposit_amount), 0);
 
   const completedJobs = quotes.filter(q => q.status === 'Fully Paid');
+
+  const upcomingJobs = quotes.filter(q => q.status === 'Scheduled' && q.scheduled_date).sort((a, b) => new Date(a.scheduled_date!).getTime() - new Date(b.scheduled_date!).getTime());
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
@@ -114,6 +116,42 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
           <p className="text-xl font-bold text-slate-50">{completedJobs.length}</p>
         </div>
       </div>
+
+      {/* Upcoming Jobs Alerts */}
+      {upcomingJobs.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-2">
+            <CalendarDays size={16} className="text-emerald-500" />
+            Upcoming Scheduled Jobs
+          </h3>
+          <div className="space-y-3">
+            {upcomingJobs.map(job => {
+              const startDate = new Date(job.scheduled_date!);
+              const endDate = new Date(startDate);
+              endDate.setHours(endDate.getHours() + 8); // Assuming an 8-hour block
+              const formatTime = (d: Date) => d.toISOString().replace(/-|:|\.\d+/g, '');
+              const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Job: ${job.client_name}`)}&dates=${formatTime(startDate)}/${formatTime(endDate)}&details=${encodeURIComponent(`Job Ref: #${job.id.substring(0,8).toUpperCase()}\nPhone: ${job.client_phone}`)}&location=${encodeURIComponent((job as any).client_address || '')}`;
+
+              return (
+                <div key={job.id} className="bg-emerald-900/20 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                  <div>
+                    <p className="font-bold text-slate-200">{job.client_name}</p>
+                    <p className="text-sm text-emerald-400">Starts: {startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                  </div>
+                  <a 
+                    href={calendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                  >
+                    <CalendarDays size={14} /> Add to Calendar
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="space-y-3">
