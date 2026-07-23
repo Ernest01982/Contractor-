@@ -1,0 +1,16 @@
+{
+  "name": "Contractor Pro",
+  "short_name": "ContractorPro",
+  "description": "Professional quoting and invoicing for South African contractors.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

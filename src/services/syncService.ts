@@ -3,7 +3,6 @@ import { Quote, Expense, Client } from '../store/useStore';
 
 export const syncQuoteToSupabase = async (quote: Quote) => {
   try {
-    console.log('Syncing quote to Supabase:', quote.id);
     
     // 1. Upsert the quote
     const { error: quoteError } = await supabase
@@ -82,7 +81,6 @@ export const syncQuoteToSupabase = async (quote: Quote) => {
          throw deleteAllError;
       }
     }
-    console.log('Quote synced successfully');
   } catch (error) {
     console.error('Failed to sync quote to Supabase:', error);
     throw error;
@@ -234,7 +232,6 @@ export const updateQuoteStatusInSupabase = async (id: string, status: string) =>
 
 export const fetchQuoteById = async (id: string): Promise<Quote | null> => {
   try {
-    console.log('Fetching quote from Supabase:', id);
     const { data, error } = await supabase
       .from('quotes')
       .select('*, items:quote_items(*)')

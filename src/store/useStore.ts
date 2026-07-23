@@ -328,7 +328,6 @@ export const useStore = create<AppState>()(
                     if (clientExistsLocally) {
                       set((currentState) => {
                         if (!currentState.pendingSyncs.some(p => p.type === 'client' && p.id === quote.client_id)) {
-                          console.log('Auto-queuing missing client for sync:', quote.client_id);
                           return { pendingSyncs: [...currentState.pendingSyncs, { type: 'client', id: quote.client_id! }] };
                         }
                         return {};

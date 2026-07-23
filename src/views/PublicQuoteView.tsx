@@ -32,10 +32,8 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
     if (!quote) {
       const loadQuote = async () => {
         try {
-          console.log('Fetching quote:', quoteId);
           const data = await fetchQuoteById(quoteId);
           if (data) {
-            console.log('Quote found:', data);
             setQuote(data);
           } else {
             console.error('Quote not found in Supabase');
@@ -270,9 +268,9 @@ export function PublicQuoteView({ quoteId }: { quoteId: string }) {
                   </p>
                 </div>
               )}
-              <form action="https://sandbox.payfast.co.za/eng/process" method="POST">
-                <input type="hidden" name="merchant_id" value="10004002" />
-                <input type="hidden" name="merchant_key" value="q1cd2rdny4a53" />
+              <form action={(import.meta as any).env.VITE_PAYFAST_URL || 'https://sandbox.payfast.co.za/eng/process'} method="POST">
+                <input type="hidden" name="merchant_id" value={(import.meta as any).env.VITE_PAYFAST_MERCHANT_ID || '10004002'} />
+                <input type="hidden" name="merchant_key" value={(import.meta as any).env.VITE_PAYFAST_MERCHANT_KEY || 'q1cd2rdny4a53'} />
                 <input type="hidden" name="return_url" value={returnUrl} />
                 <input type="hidden" name="cancel_url" value={cancelUrl} />
                 <input type="hidden" name="amount" value={amountToPay.toFixed(2)} />

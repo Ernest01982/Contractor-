@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function parseVoiceToQuote(transcript: string) {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: `Act as a quantity surveyor. Parse this text into a JSON list of quote items.
       Text: "${transcript}"`,
       config: {
@@ -44,7 +44,7 @@ export async function parseVoiceToQuote(transcript: string) {
 export async function parseReceiptImage(base64Image: string, mimeType: string) {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: {
         parts: [
           {
